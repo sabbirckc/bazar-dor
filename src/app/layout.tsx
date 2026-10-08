@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "sonner";
+import Navbar from "@/component/Navbar";
 
 export const metadata: Metadata = {
   title: "বাজার দর | Bazar Dor",
@@ -14,7 +16,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn">
-      <body>{children}</body>
+      <body>
+        <Navbar />
+
+        {children}
+
+        <Toaster
+          position="top-right"
+          richColors
+        />
+      </body>
     </html>
   );
 }
