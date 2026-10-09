@@ -4,59 +4,68 @@ import { notFound, redirect } from "next/navigation";
 
 import { auth } from "@/lib/auth";
 import { getProductBySlug } from "@/lib/api";
-import type { Product } from "@/types/product";
+import type { Market, Product } from "@/types/product";
 
 interface ProductDetailsPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const formatBengaliNumber = (value: number): string =>
-  value.toLocaleString("bn-BD", {
+function formatBengaliNumber(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "—";
+  }
+
+  return value.toLocaleString("bn-BD", {
     maximumFractionDigits: 2,
   });
+}
 
-const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
+export default async function ProductDetailsPage({
+  params,
+}: ProductDetailsPageProps) {
   const { slug } = await params;
 
-  // Protect the product details page.
+  // Require the user to sign in.
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.user) {
-    redirect(`/signin?callbackURL=${encodeURIComponent(`/product/${slug}`)}`);
+    const callbackURL = encodeURIComponent("/product/" + slug);
+
+    redirect("/signin?callbackURL=" + callbackURL);
   }
 
-  // Find the product by its actual API slug.
-  let result: Product | null = null;
-
-  try {
-    result = (await getProductBySlug(slug)) as Product | null;
-  } catch (error) {
-    console.error("Failed to load product:", error);
-    throw error;
-  }
+  // Fetch the requested product.
+  const result = await getProductBySlug(slug);
 
   if (!result) {
     notFound();
   }
 
-  const product = result;
-  const markets = product.markets ?? [];
+  const product = result as Product;
 
-  const marketMinimums = markets
-    .map((market) => market.min)
-    .filter((price) => Number.isFinite(price));
-
-  const marketMaximums = markets
-    .map((market) => market.max)
-    .filter((price) => Number.isFinite(price));
+  // Validate the market data.
+  const markets: Market[] = Array.isArray(product.markets)
+    ? product.markets.filter(
+        (market) =>
+          market !== null &&
+          typeof market.market === "string" &&
+          typeof market.division === "string" &&
+          Number.isFinite(market.min) &&
+          Number.isFinite(market.max),
+      )
+    : [];
 
   const minimumPrice =
-    marketMinimums.length > 0 ? Math.min(...marketMinimums) : product.today;
+    markets.length > 0
+      ? Math.min(...markets.map((market) => market.min))
+      : product.today;
 
   const maximumPrice =
-    marketMaximums.length > 0 ? Math.max(...marketMaximums) : product.today;
+    markets.length > 0
+      ? Math.max(...markets.map((market) => market.max))
+      : product.today;
 
   const averagePrice =
     markets.length > 0
@@ -71,11 +80,11 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
 
   return (
     <main className="min-h-screen">
-      {/* Product header */}
+      {/* Product information */}
       <section className="border-b border-base-300 bg-base-100">
         <div className="mx-auto max-w-6xl px-4 py-10 sm:py-14">
           <Link
-            href={product.category ? `/category/${product.category}` : "/"}
+            href={product.category ? "/category/" + product.category : "/"}
             className="btn btn-ghost btn-sm mb-8"
           >
             ← ফিরে যান
@@ -91,7 +100,7 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
             <div>
               {product.category && (
                 <Link
-                  href={`/category/${product.category}`}
+                  href={"/category/" + product.category}
                   className="badge badge-primary mb-4"
                 >
                   {product.categoryNameBn || product.category}
@@ -117,13 +126,13 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
 
                   {isUp && (
                     <span className="badge badge-error">
-                      ▲ {formatBengaliNumber(product.change.pct)}%
+                      ▲ {formatBengaliNumber(Math.abs(product.change.pct))}%
                     </span>
                   )}
 
                   {isDown && (
                     <span className="badge badge-success">
-                      ▼ {formatBengaliNumber(product.change.pct)}%
+                      ▼ {formatBengaliNumber(Math.abs(product.change.pct))}%
                     </span>
                   )}
 
@@ -181,43 +190,61 @@ const ProductDetailsPage = async ({ params }: ProductDetailsPageProps) => {
         </p>
 
         {markets.length === 0 ? (
-          <div className="mt-8 rounded-2xl border border-base-300 p-10 text-center">
+          <div className="mt-8 rounded-2xl border border-base-300 bg-base-100 p-10 text-center">
             <p className="text-4xl">📊</p>
+
             <h3 className="mt-4 text-xl font-bold">
               বাজারের তথ্য পাওয়া যায়নি
             </h3>
+
             <p className="mt-2 text-base-content/60">
               এই পণ্যের জন্য বর্তমানে বাজারভিত্তিক তথ্য নেই।
             </p>
           </div>
         ) : (
-          <div className="mt-8 overflow-x-auto rounded-2xl border border-base-300">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>বাজার</th>
-                  <th>বিভাগ</th>
-                  <th>সর্বনিম্ন</th>
-                  <th>সর্বোচ্চ</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {markets.map((market, index) => (
-                  <tr key={`${market.market}-${index}`}>
-                    <td className="font-semibold">{market.market}</td>
-                    <td>{market.division}</td>
-                    <td>{formatBengaliNumber(market.min)} টাকা</td>
-                    <td>{formatBengaliNumber(market.max)} টাকা</td>
+          <div className="mt-8 overflow-hidden rounded-2xl border border-base-300">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[650px] border-collapse text-left">
+                <thead className="bg-base-200">
+                  <tr className="border-b border-base-300">
+                    <th className="w-[35%] px-4 py-3 font-semibold">বাজার</th>
+                    <th className="w-[25%] px-4 py-3 font-semibold">বিভাগ</th>
+                    <th className="w-[20%] px-4 py-3 text-right font-semibold">
+                      সর্বনিম্ন
+                    </th>
+                    <th className="w-[20%] px-4 py-3 text-right font-semibold">
+                      সর্বোচ্চ
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {markets.map((market, index) => (
+                    <tr
+                      key={market.market + "-" + index}
+                      className="border-b border-base-300/60 last:border-b-0 hover:bg-base-200/50"
+                    >
+                      <td className="px-4 py-3 font-medium">{market.market}</td>
+
+                      <td className="px-4 py-3 text-base-content/70">
+                        {market.division}
+                      </td>
+
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {formatBengaliNumber(market.min)} টাকা
+                      </td>
+
+                      <td className="px-4 py-3 text-right tabular-nums">
+                        {formatBengaliNumber(market.max)} টাকা
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
     </main>
   );
-};
-
-export default ProductDetailsPage;
+}

@@ -1,104 +1,88 @@
+
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { authClient } from "@/lib/auth-client";
 
-type Provider =
-  | "google"
-  | "github";
+type Provider = "google" | "github";
 
 const SocialLogin = () => {
+  const searchParams = useSearchParams();
   const [loadingProvider, setLoadingProvider] =
     useState<Provider | null>(null);
 
-  const handleSocialLogin = async (
-    provider: Provider
-  ) => {
+  const callbackURL = searchParams.get("callbackURL");
+
+  const redirectTo =
+    callbackURL?.startsWith("/") && !callbackURL.startsWith("//")
+      ? callbackURL
+      : "/";
+
+  const handleSocialLogin = async (provider: Provider) => {
     try {
       setLoadingProvider(provider);
 
-      const { error } =
-        await authClient.signIn.social({
-          provider,
-          callbackURL: "/",
-        });
+      const { error } = await authClient.signIn.social({
+        provider,
+        callbackURL: redirectTo,
+        errorCallbackURL: "/signin",
+      });
 
       if (error) {
-        console.error(
-          `${provider} login error:`,
-          error
-        );
+        console.error(`${provider} sign-in error:`, error);
 
         toast.error(
-          error.message ||
-            `${provider} দিয়ে সাইন ইন করা যায়নি`
+          error.message || `${provider} sign-in failed`
         );
 
         setLoadingProvider(null);
       }
     } catch (error) {
-      console.error(
-        `${provider} login error:`,
-        error
-      );
+      console.error(`${provider} sign-in error:`, error);
 
-      toast.error(
-        `${provider} দিয়ে সাইন ইন করতে সমস্যা হয়েছে`
-      );
-
+      toast.error("সাইন ইন করতে সমস্যা হয়েছে");
       setLoadingProvider(null);
     }
   };
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      {/* Google */}
-
       <button
         type="button"
-        onClick={() =>
-          handleSocialLogin("google")
-        }
+        onClick={() => handleSocialLogin("google")}
         disabled={loadingProvider !== null}
-        className="btn btn-outline"
+        className="btn btn-outline w-full"
       >
         {loadingProvider === "google" ? (
           <>
             <span className="loading loading-spinner loading-sm" />
-            Google দিয়ে সাইন ইন হচ্ছে...
+            Google...
           </>
         ) : (
           <>
-            <span className="text-lg">
-              G
-            </span>
+            <span className="text-lg font-bold">G</span>
             Google
           </>
         )}
       </button>
 
-      {/* GitHub */}
-
       <button
         type="button"
-        onClick={() =>
-          handleSocialLogin("github")
-        }
+        onClick={() => handleSocialLogin("github")}
         disabled={loadingProvider !== null}
-        className="btn btn-outline"
+        className="btn btn-outline w-full"
       >
         {loadingProvider === "github" ? (
           <>
             <span className="loading loading-spinner loading-sm" />
-            GitHub দিয়ে সাইন ইন হচ্ছে...
+            GitHub...
           </>
         ) : (
           <>
-            <span className="text-lg">
-              ◉
-            </span>
+            <span className="text-lg">◉</span>
             GitHub
           </>
         )}

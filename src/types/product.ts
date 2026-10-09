@@ -27,3 +27,9 @@ export interface Product {
   change: ProductChange;
   markets: Market[];
 }
+
+export interface Category {
+  slug: string;
+  nameBn: string;
+  icon?: string;
+}
