@@ -1,72 +1,41 @@
-const HomeLoading = () => {
+
+export default function HomeLoading() {
   return (
-    <main className="min-h-screen">
-      {/* Hero Skeleton */}
-      <section className="border-b border-base-300">
-        <div className="mx-auto max-w-6xl px-4 py-12 sm:py-16 lg:py-20">
-          <div className="grid items-center gap-10 lg:grid-cols-2">
-            {/* Text */}
-            <div>
-              <div className="skeleton h-5 w-32" />
-
-              <div className="skeleton mt-5 h-12 w-full max-w-xl" />
-              <div className="skeleton mt-3 h-12 w-4/5 max-w-lg" />
-
-              <div className="skeleton mt-6 h-6 w-full max-w-xl" />
-              <div className="skeleton mt-2 h-6 w-4/5 max-w-lg" />
-
-              <div className="skeleton mt-8 h-12 w-48" />
-            </div>
-
-            {/* Image */}
-            <div className="flex justify-center lg:justify-end">
-              <div className="skeleton aspect-square w-full max-w-md rounded-3xl" />
-            </div>
-          </div>
+    <main className="mx-auto min-h-screen max-w-6xl animate-pulse px-4 py-10">
+      {/* Hero skeleton */}
+      <section className="grid gap-8 rounded-2xl border border-gray-200 p-6 sm:p-10 lg:grid-cols-2">
+        <div className="space-y-4">
+          <div className="h-4 w-32 rounded bg-gray-200" />
+          <div className="h-10 w-4/5 rounded bg-gray-200" />
+          <div className="h-4 w-full rounded bg-gray-200" />
+          <div className="h-4 w-2/3 rounded bg-gray-200" />
+          <div className="h-10 w-36 rounded-lg bg-gray-200" />
+        </div>
+        <div className="flex min-h-48 items-center justify-center rounded-2xl bg-gray-200">
+          <span className="text-5xl">🛒</span>
         </div>
       </section>
 
-      {/* Product Sections */}
-      {Array.from({ length: 3 }).map((_, sectionIndex) => (
-        <section
-          key={sectionIndex}
-          className="border-b border-base-300 py-12 sm:py-16"
-        >
-          <div className="mx-auto max-w-6xl px-4">
-            {/* Section heading */}
-            <div className="mb-8">
-              <div className="skeleton h-8 w-56" />
-              <div className="skeleton mt-2 h-4 w-72" />
-            </div>
-
-            {/* Product cards */}
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map(
-                (_, cardIndex) => (
-                  <div
-                    key={cardIndex}
-                    className="card border border-base-300 bg-base-100"
-                  >
-                    <div className="skeleton h-44 w-full rounded-none" />
-
-                    <div className="card-body">
-                      <div className="skeleton h-5 w-32" />
-
-                      <div className="skeleton h-4 w-20" />
-
-                      <div className="skeleton mt-4 h-8 w-28" />
-
-                      <div className="skeleton mt-2 h-5 w-16" />
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
+      {/* Product section skeleton */}
+      {[1, 2, 3].map((section) => (
+        <section key={section} className="py-10">
+          <div className="mb-6 h-7 w-48 rounded bg-gray-200" />
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => (
+              <div
+                key={index}
+                className="rounded-xl border border-gray-200 p-4"
+              >
+                <div className="mb-4 flex h-24 items-center justify-center rounded-lg bg-gray-100">
+                  <span className="text-3xl">🛒</span>
+                </div>
+                <div className="mb-3 h-4 w-3/4 rounded bg-gray-200" />
+                <div className="h-5 w-1/2 rounded bg-gray-200" />
+              </div>
+            ))}
           </div>
         </section>
       ))}
     </main>
   );
-};
-
-export default HomeLoading;
+}
