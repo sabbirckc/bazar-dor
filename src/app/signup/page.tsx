@@ -1,113 +1,209 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import {
+  FormEvent,
+  useState,
+} from "react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth-client";
+import SocialLogin from "@/component/SocialLogin";
 
 const SignupPage = () => {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const formData =
+      new FormData(event.currentTarget);
 
-    const name = formData.get("name")?.toString().trim() || "";
-    const email = formData.get("email")?.toString().trim() || "";
-    const password = formData.get("password")?.toString() || "";
+    const name =
+      formData
+        .get("name")
+        ?.toString()
+        .trim() || "";
+
+    const email =
+      formData
+        .get("email")
+        ?.toString()
+        .trim() || "";
+
+    const password =
+      formData
+        .get("password")
+        ?.toString() || "";
+
     const confirmPassword =
-      formData.get("confirmPassword")?.toString() || "";
+      formData
+        .get("confirmPassword")
+        ?.toString() || "";
 
-    // Name validation
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
     if (!name) {
-      toast.error("আপনার নাম লিখুন");
+      toast.error(
+        "আপনার নাম লিখুন"
+      );
+
       return;
     }
 
     if (name.length < 2) {
-      toast.error("নাম কমপক্ষে ২ অক্ষরের হতে হবে");
+      toast.error(
+        "নাম কমপক্ষে ২ অক্ষরের হতে হবে"
+      );
+
       return;
     }
 
-    // Email validation
     if (!email) {
-      toast.error("আপনার ইমেইল লিখুন");
+      toast.error(
+        "আপনার ইমেইল লিখুন"
+      );
+
       return;
     }
 
-    // Password validation
     if (!password) {
-      toast.error("আপনার পাসওয়ার্ড লিখুন");
+      toast.error(
+        "আপনার পাসওয়ার্ড লিখুন"
+      );
+
       return;
     }
 
     if (password.length < 8) {
-      toast.error("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে");
+      toast.error(
+        "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে"
+      );
+
       return;
     }
 
-    // Confirm password validation
     if (!confirmPassword) {
-      toast.error("পাসওয়ার্ড নিশ্চিত করুন");
+      toast.error(
+        "পাসওয়ার্ড নিশ্চিত করুন"
+      );
+
       return;
     }
 
-    if (password !== confirmPassword) {
-      toast.error("পাসওয়ার্ড মিলছে না");
+    if (
+      password !== confirmPassword
+    ) {
+      toast.error(
+        "পাসওয়ার্ড মিলছে না"
+      );
+
       return;
     }
+
+    /* =====================================================
+       SIGN UP
+    ===================================================== */
 
     try {
       setLoading(true);
 
-      const { data, error } = await authClient.signUp.email({
-        name,
-        email,
-        password,
-        callbackURL: "/signin",
-      });
+      const { data, error } =
+        await authClient.signUp.email({
+          name,
+          email,
+          password,
+          callbackURL: "/signin",
+        });
 
-      // Debug information
-      console.log("Signup data:", data);
-      console.log("Signup error:", error);
+      console.log(
+        "Signup data:",
+        data
+      );
+
+      console.log(
+        "Signup error:",
+        error
+      );
 
       if (error) {
-        console.error("Better Auth signup error:", error);
+        console.error(
+          "Better Auth signup error:",
+          error
+        );
 
         toast.error(
-          error.message || "অ্যাকাউন্ট তৈরি করা যায়নি"
+          error.message ||
+            "অ্যাকাউন্ট তৈরি করা যায়নি"
         );
 
         return;
       }
 
-      toast.success("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে");
+      /* ===================================================
+         SUCCESS
+      =================================================== */
+
+      toast.success(
+        "অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে"
+      );
+
+      /*
+       * Better Auth is configured with:
+       *
+       * autoSignIn: false
+       *
+       * Therefore the user should go to
+       * the signin page after registration.
+       */
 
       router.push("/signin");
       router.refresh();
     } catch (error) {
-      console.error("Signup error:", error);
+      console.error(
+        "Signup error:",
+        error
+      );
 
-      toast.error("অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে");
+      toast.error(
+        "অ্যাকাউন্ট তৈরি করতে সমস্যা হয়েছে"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  /* =====================================================
+     UI
+  ===================================================== */
 
   return (
     <main className="min-h-screen bg-base-200 px-4 py-10">
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
         <div className="card w-full max-w-md bg-base-100 shadow-xl">
           <div className="card-body">
+            {/* =================================================
+                LOGO / TITLE
+            ================================================= */}
 
-            {/* Logo and title */}
             <div className="text-center">
-              <Link href="/" className="inline-block">
-                <div className="text-4xl">🛒</div>
+              <Link
+                href="/"
+                className="inline-block"
+              >
+                <div className="text-4xl">
+                  🛒
+                </div>
 
                 <h1 className="mt-2 text-3xl font-bold">
                   বাজার দর
@@ -119,12 +215,16 @@ const SignupPage = () => {
               </p>
             </div>
 
-            {/* Signup form */}
+            {/* =================================================
+                SIGNUP FORM
+            ================================================= */}
+
             <form
               onSubmit={handleSubmit}
               className="mt-6 space-y-4"
             >
               {/* Name */}
+
               <div>
                 <label
                   htmlFor="name"
@@ -147,6 +247,7 @@ const SignupPage = () => {
               </div>
 
               {/* Email */}
+
               <div>
                 <label
                   htmlFor="email"
@@ -169,6 +270,7 @@ const SignupPage = () => {
               </div>
 
               {/* Password */}
+
               <div>
                 <label
                   htmlFor="password"
@@ -190,7 +292,8 @@ const SignupPage = () => {
                 />
               </div>
 
-              {/* Confirm password */}
+              {/* Confirm Password */}
+
               <div>
                 <label
                   htmlFor="confirmPassword"
@@ -213,6 +316,7 @@ const SignupPage = () => {
               </div>
 
               {/* Submit */}
+
               <button
                 type="submit"
                 className="btn btn-primary w-full"
@@ -221,6 +325,7 @@ const SignupPage = () => {
                 {loading ? (
                   <>
                     <span className="loading loading-spinner loading-sm" />
+
                     অ্যাকাউন্ট তৈরি হচ্ছে...
                   </>
                 ) : (
@@ -229,15 +334,22 @@ const SignupPage = () => {
               </button>
             </form>
 
-            {/* Divider */}
+            {/* =================================================
+                SOCIAL LOGIN
+            ================================================= */}
+
             <div className="divider">
               অথবা
             </div>
 
-            {/* Sign in */}
-            <p className="text-center text-sm text-base-content/70">
-              ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
+            <SocialLogin />
 
+            {/* =================================================
+                SIGNIN LINK
+            ================================================= */}
+
+            <p className="mt-2 text-center text-sm text-base-content/70">
+              ইতিমধ্যে অ্যাকাউন্ট আছে?{" "}
               <Link
                 href="/signin"
                 className="link link-primary font-semibold"
@@ -246,7 +358,10 @@ const SignupPage = () => {
               </Link>
             </p>
 
-            {/* Home */}
+            {/* =================================================
+                HOME LINK
+            ================================================= */}
+
             <Link
               href="/"
               className="btn btn-ghost mt-2"

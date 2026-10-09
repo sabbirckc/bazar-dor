@@ -1,80 +1,145 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import {
+  FormEvent,
+  useState,
+} from "react";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import { toast } from "sonner";
+
 import { authClient } from "@/lib/auth-client";
+import SocialLogin from "@/component/SocialLogin";
 
 const SigninPage = () => {
   const router = useRouter();
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (
+    event: FormEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
+    const formData =
+      new FormData(event.currentTarget);
 
-    const email = formData.get("email")?.toString().trim() || "";
-    const password = formData.get("password")?.toString() || "";
+    const email =
+      formData
+        .get("email")
+        ?.toString()
+        .trim() || "";
 
-    // Email validation
+    const password =
+      formData
+        .get("password")
+        ?.toString() || "";
+
+    /* =====================================================
+       VALIDATION
+    ===================================================== */
+
     if (!email) {
-      toast.error("আপনার ইমেইল লিখুন");
+      toast.error(
+        "আপনার ইমেইল লিখুন"
+      );
+
       return;
     }
 
-    // Password validation
     if (!password) {
-      toast.error("আপনার পাসওয়ার্ড লিখুন");
+      toast.error(
+        "আপনার পাসওয়ার্ড লিখুন"
+      );
+
       return;
     }
 
     if (password.length < 8) {
-      toast.error("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে");
+      toast.error(
+        "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে"
+      );
+
       return;
     }
+
+    /* =====================================================
+       SIGN IN
+    ===================================================== */
 
     try {
       setLoading(true);
 
-      const { error } = await authClient.signIn.email({
-        email,
-        password,
-        rememberMe: true,
-        callbackURL: "/",
-      });
+      const { error } =
+        await authClient.signIn.email({
+          email,
+          password,
+          rememberMe: true,
+          callbackURL: "/",
+        });
+
+      console.log(
+        "Signin error:",
+        error
+      );
 
       if (error) {
         toast.error(
-          error.message || "ইমেইল অথবা পাসওয়ার্ড সঠিক নয়"
+          error.message ||
+            "ইমেইল অথবা পাসওয়ার্ড সঠিক নয়"
         );
+
         return;
       }
 
-      toast.success("সফলভাবে সাইন ইন হয়েছে");
+      /* ===================================================
+         SUCCESS
+      =================================================== */
+
+      toast.success(
+        "সফলভাবে সাইন ইন হয়েছে"
+      );
 
       router.push("/");
       router.refresh();
     } catch (error) {
-      console.error("Signin error:", error);
+      console.error(
+        "Signin error:",
+        error
+      );
 
-      toast.error("সাইন ইন করতে সমস্যা হয়েছে");
+      toast.error(
+        "সাইন ইন করতে সমস্যা হয়েছে"
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  /* =====================================================
+     UI
+  ===================================================== */
 
   return (
     <main className="min-h-screen bg-base-200 px-4 py-10">
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
         <div className="card w-full max-w-md bg-base-100 shadow-xl">
           <div className="card-body">
-            {/* Logo */}
+            {/* =================================================
+                LOGO / TITLE
+            ================================================= */}
+
             <div className="text-center">
-              <Link href="/" className="inline-block">
-                <div className="text-4xl">🛒</div>
+              <Link
+                href="/"
+                className="inline-block"
+              >
+                <div className="text-4xl">
+                  🛒
+                </div>
 
                 <h1 className="mt-2 text-3xl font-bold">
                   বাজার দর
@@ -86,12 +151,16 @@ const SigninPage = () => {
               </p>
             </div>
 
-            {/* Signin Form */}
+            {/* =================================================
+                EMAIL/PASSWORD FORM
+            ================================================= */}
+
             <form
               onSubmit={handleSubmit}
               className="mt-6 space-y-4"
             >
               {/* Email */}
+
               <div>
                 <label
                   htmlFor="email"
@@ -114,6 +183,7 @@ const SigninPage = () => {
               </div>
 
               {/* Password */}
+
               <div>
                 <label
                   htmlFor="password"
@@ -136,6 +206,7 @@ const SigninPage = () => {
               </div>
 
               {/* Submit */}
+
               <button
                 type="submit"
                 className="btn btn-primary w-full"
@@ -144,6 +215,7 @@ const SigninPage = () => {
                 {loading ? (
                   <>
                     <span className="loading loading-spinner loading-sm" />
+
                     সাইন ইন হচ্ছে...
                   </>
                 ) : (
@@ -152,10 +224,21 @@ const SigninPage = () => {
               </button>
             </form>
 
-            {/* Signup */}
-            <div className="divider">অথবা</div>
+            {/* =================================================
+                SOCIAL LOGIN
+            ================================================= */}
 
-            <p className="text-center text-sm text-base-content/70">
+            <div className="divider">
+              অথবা
+            </div>
+
+            <SocialLogin />
+
+            {/* =================================================
+                SIGNUP LINK
+            ================================================= */}
+
+            <p className="mt-2 text-center text-sm text-base-content/70">
               অ্যাকাউন্ট নেই?{" "}
               <Link
                 href="/signup"
@@ -165,7 +248,10 @@ const SigninPage = () => {
               </Link>
             </p>
 
-            {/* Home */}
+            {/* =================================================
+                HOME LINK
+            ================================================= */}
+
             <Link
               href="/"
               className="btn btn-ghost mt-2"

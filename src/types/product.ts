@@ -1,4 +1,10 @@
-export interface ProductMarket {
+
+export interface ProductChange {
+  dir: "up" | "down" | "same";
+  pct: number;
+}
+
+export interface Market {
   market: string;
   division: string;
   min: number;
@@ -6,24 +12,18 @@ export interface ProductMarket {
 }
 
 export interface Product {
-  id: string | number;
+  id: number;
   slug: string;
-
-  name: string;
-  description?: string;
-
-  category?: string;
-  categoryName?: string;
-
+  nameBn: string;
+  category: string;
+  categoryNameBn: string;
+  categoryIcon: string;
   unit: string;
-
-  price: number;
-  previousPrice?: number;
-
-  change: number;
-
-  image?: string;
-  emoji?: string;
-
-  markets?: ProductMarket[];
+  image: string;
+  today: number;
+  yesterday: number;
+  lastWeek: number;
+  lastMonth: number;
+  change: ProductChange;
+  markets: Market[];
 }
