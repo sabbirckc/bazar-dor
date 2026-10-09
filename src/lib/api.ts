@@ -4,7 +4,9 @@ const API_BASE_URLS = [
   "https://api.abcz.workers.dev/api/bazardor",
 ];
 
-async function apiRequest<T = unknown>(endpoint: string): Promise<T> {
+async function apiRequest<T = unknown>(
+  endpoint: string
+): Promise<T> {
   let lastError: Error | null = null;
 
   for (const baseURL of API_BASE_URLS) {
@@ -15,7 +17,7 @@ async function apiRequest<T = unknown>(endpoint: string): Promise<T> {
 
       if (!response.ok) {
         throw new Error(
-          `${baseURL}${endpoint} returned ${response.status} ${response.statusText}`
+          `Request failed: ${response.status} ${response.statusText}`
         );
       }
 
@@ -26,34 +28,56 @@ async function apiRequest<T = unknown>(endpoint: string): Promise<T> {
           ? error
           : new Error("Unknown API error");
 
-      console.error(`API request failed: ${baseURL}${endpoint}`, error);
+      console.error(`API request failed (${baseURL}):`, lastError.message);
     }
   }
 
   throw new Error(
-    `Unable to load ${endpoint}. ${lastError?.message ?? "Both APIs failed."}`
+    `Unable to fetch ${endpoint}: ${
+      lastError?.message ?? "Both API servers failed."
+    }`
   );
 }
 
-// Fetch all products
+// Fetch every product from the API.
 export async function fetchProducts() {
   return apiRequest("/products");
 }
 
-// Keep this alias if page.tsx imports getProducts
+// Backwards-compatible alias for existing imports.
 export const getProducts = fetchProducts;
 
-// Fetch one product
-export async function fetchProduct(slug: string) {
-  return apiRequest(`/products/${encodeURIComponent(slug)}`);
+// Fetch one product using its actual slug from the products list.
+// The API's individual-product endpoint may require a numeric ID.
+export async function getProductBySlug(slug: string) {
+  const response = await fetchProducts();
+
+  const products: unknown[] = Array.isArray(response)
+    ? response
+    : typeof response === "object" &&
+        response !== null &&
+        "data" in response &&
+        Array.isArray(response.data)
+      ? response.data
+      : [];
+
+  return (
+    products.find(
+      (item) =>
+        typeof item === "object" &&
+        item !== null &&
+        "slug" in item &&
+        item.slug === slug
+    ) ?? null
+  );
 }
 
-// Fetch all categories
+// Fetch all categories.
 export async function fetchCategories() {
   return apiRequest("/categories");
 }
 
-// Fetch one category
+// Fetch a category by slug.
 export async function fetchCategory(slug: string) {
   return apiRequest(`/categories/${encodeURIComponent(slug)}`);
 }
