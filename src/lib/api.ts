@@ -28,7 +28,10 @@ async function apiRequest<T = unknown>(
           ? error
           : new Error("Unknown API error");
 
-      console.error(`API request failed (${baseURL}):`, lastError.message);
+      console.error(
+        `API request failed (${baseURL}):`,
+        lastError.message
+      );
     }
   }
 
@@ -39,16 +42,21 @@ async function apiRequest<T = unknown>(
   );
 }
 
-// Fetch every product from the API.
+// Fetch all products.
 export async function fetchProducts() {
   return apiRequest("/products");
 }
 
-// Backwards-compatible alias for existing imports.
 export const getProducts = fetchProducts;
 
-// Fetch one product using its actual slug from the products list.
-// The API's individual-product endpoint may require a numeric ID.
+// Fetch products belonging to a category.
+export async function getProductsByCategory(slug: string) {
+  return apiRequest(
+    `/products?category=${encodeURIComponent(slug)}`
+  );
+}
+
+// Fetch a single product using its slug.
 export async function getProductBySlug(slug: string) {
   const response = await fetchProducts();
 
@@ -77,7 +85,12 @@ export async function fetchCategories() {
   return apiRequest("/categories");
 }
 
-// Fetch a category by slug.
+// Fetch a single category using its slug.
 export async function fetchCategory(slug: string) {
-  return apiRequest(`/categories/${encodeURIComponent(slug)}`);
+  return apiRequest(
+    `/categories/${encodeURIComponent(slug)}`
+  );
 }
+
+// Alias expected by the category page.
+export const getCategoryBySlug = fetchCategory;

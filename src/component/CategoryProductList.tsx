@@ -1,135 +1,80 @@
+
 "use client";
 
 import { useMemo, useState } from "react";
+import type { Product } from "@/types/product";
+import ProductCard from "@/component/ProductCard";
 
-import ProductCard from "./ProductCard";
-
-import { Product } from "@/types/product";
-
-import { bengaliToEnglishNumber } from "@/lib/number";
+type SortOption = "default" | "low-high" | "high-low";
 
 interface CategoryProductListProps {
   products: Product[];
 }
 
-type SortOption =
-  | "default"
-  | "low"
-  | "high";
-
 const CategoryProductList = ({
   products,
 }: CategoryProductListProps) => {
-  const [sort, setSort] =
-    useState<SortOption>("default");
+  const [sortBy, setSortBy] = useState<SortOption>("default");
 
   const sortedProducts = useMemo(() => {
-    const productsCopy = [...products];
+    const result = [...products];
 
-    if (sort === "low") {
-      return productsCopy.sort(
-        (a, b) =>
-          bengaliToEnglishNumber(
-            String(a.price)
-          ) -
-          bengaliToEnglishNumber(
-            String(b.price)
-          )
-      );
+    if (sortBy === "low-high") {
+      result.sort((a, b) => a.today - b.today);
+    } else if (sortBy === "high-low") {
+      result.sort((a, b) => b.today - a.today);
     }
 
-    if (sort === "high") {
-      return productsCopy.sort(
-        (a, b) =>
-          bengaliToEnglishNumber(
-            String(b.price)
-          ) -
-          bengaliToEnglishNumber(
-            String(a.price)
-          )
-      );
-    }
+    return result;
+  }, [products, sortBy]);
 
-    return productsCopy;
-  }, [products, sort]);
+  if (products.length === 0) {
+    return (
+      <div className="rounded-2xl border border-base-300 p-10 text-center">
+        <p className="text-4xl">📦</p>
+        <h2 className="mt-4 text-xl font-bold">
+          এই বিভাগে কোনো পণ্য পাওয়া যায়নি
+        </h2>
+        <p className="mt-2 text-base-content/60">
+          অন্য একটি বিভাগ নির্বাচন করে দেখুন।
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <>
-      {/* Sort */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">
-            পণ্যের তালিকা
-          </h2>
+    <div>
+      <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <p className="text-sm text-base-content/60">
+          মোট {sortedProducts.length}টি পণ্য
+        </p>
 
-          <p className="mt-1 text-sm text-base-content/60">
-            {sortedProducts.length}টি পণ্য
-          </p>
-        </div>
-
-        <div>
-          <label
-            htmlFor="sort"
-            className="mb-1 block text-sm font-medium"
-          >
-            পণ্য সাজান
+        <div className="flex items-center gap-3">
+          <label htmlFor="product-sort" className="text-sm">
+            সাজান:
           </label>
 
           <select
-            id="sort"
-            value={sort}
+            id="product-sort"
+            value={sortBy}
             onChange={(event) =>
-              setSort(
-                event.target.value as SortOption
-              )
+              setSortBy(event.target.value as SortOption)
             }
-            className="select select-bordered w-full sm:w-56"
+            className="select select-bordered select-sm"
           >
-            <option value="default">
-              ডিফল্ট
-            </option>
-
-            <option value="low">
-              দাম: কম থেকে বেশি
-            </option>
-
-            <option value="high">
-              দাম: বেশি থেকে কম
-            </option>
+            <option value="default">ডিফল্ট</option>
+            <option value="low-high">দাম: কম থেকে বেশি</option>
+            <option value="high-low">দাম: বেশি থেকে কম</option>
           </select>
         </div>
       </div>
 
-      {/* Products */}
-
-      {sortedProducts.length === 0 ? (
-        <div className="rounded-2xl border border-base-300 bg-base-100 px-6 py-16 text-center">
-          <div className="text-6xl">
-            📦
-          </div>
-
-          <h2 className="mt-5 text-2xl font-bold">
-            কোনো পণ্য পাওয়া যায়নি
-          </h2>
-
-          <p className="mt-2 text-base-content/60">
-            এই ক্যাটাগরিতে বর্তমানে কোনো
-            পণ্য পাওয়া যাচ্ছে না।
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {sortedProducts.map(
-            (product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-              />
-            )
-          )}
-        </div>
-      )}
-    </>
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {sortedProducts.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
   );
 };
 
