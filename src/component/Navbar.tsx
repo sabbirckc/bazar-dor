@@ -1,214 +1,337 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
-const categories = [
-{ slug: "chal", name: "chal" },
-{ slug: "dal", name: "dal" },
-{ slug: "tel", name: "tel" },
-{ slug: "sobji", name: "sobji" },
-{ slug: "mach", name: "mach" },
-{ slug: "mangsho", name: "mangsho" },
-{ slug: "dim-dui", name: "dim-dui" },
-{ slug: "mosla", name: "mosla" },
-];
-
-const tickerItems = [
-{ emoji: "🥚", name: "ডিম", price: "০ টাকা", unit: "/dozen" },
-{ emoji: "🥔", name: "আলু", price: "০ টাকা", unit: "/kg" },
-{ emoji: "🍚", name: "চাল", price: "০ টাকা", unit: "/kg" },
-{ emoji: "🛢️", name: "তেল", price: "০ টাকা", unit: "/litre" },
-{ emoji: "🐟", name: "মাছ", price: "০ টাকা", unit: "/kg" },
-{ emoji: "🥬", name: "সবজি", price: "০ টাকা", unit: "/kg" },
-];
-
-const Navbar = () => {
-const pathname = usePathname();
-const router = useRouter();
-
-const { data: session, isPending } = authClient.useSession();
-
-const [formattedDate, setFormattedDate] = useState("");
-const [isSigningOut, setIsSigningOut] = useState(false);
-const [menuOpen, setMenuOpen] = useState(false);
-
-const user = session?.user;
-
-useEffect(() => {
-setFormattedDate(
-new Intl.DateTimeFormat("bn-BD", {
-weekday: "long",
-day: "numeric",
-month: "long",
-year: "numeric",
-timeZone: "Asia/Dhaka",
-}).format(new Date()),
-);
-}, []);
-
-useEffect(() => {
-setMenuOpen(false);
-}, [pathname]);
-
-const handleSignOut = async () => {
-try {
-setIsSigningOut(true);
-
-  const { error } = await authClient.signOut();
-
-  if (error) {
-    console.error("Sign out failed:", error);
-    return;
-  }
-
-  router.replace("/signin");
-  router.refresh();
-} catch (error) {
-  console.error("Sign out failed:", error);
-} finally {
-  setIsSigningOut(false);
+interface Category {
+  slug: string;
+  title: string;
+  icon: string;
 }
 
-};
+interface TickerProduct {
+  id: number;
+  slug: string;
+  nameBn: string;
+  image?: string;
+  categoryIcon?: string;
+  today: number;
+  unit: string;
+  change?: {
+    dir: "up" | "down" | "same" | "flat";
+    pct: number;
+  };
+}
 
-return (
-<header className="border-b border-gray-300 bg-[#f1f7f2] text-[#172b40]">
-<div className="mx-auto max-w-6xl px-4">
-{/* Top row: logo, date and account */}
-<div className="flex min-h-20 flex-wrap items-center justify-between gap-4 border-b border-gray-300 py-3">
-<Link href="/" className="flex items-center gap-3">
-<span className="text-4xl" aria-hidden="true">
-🛒
-</span>
+interface NavbarProps {
+  tickerProducts: TickerProduct[];
+}
 
-        <span>
-          <span className="block text-2xl font-bold leading-tight">
-            বাজার দর
-          </span>
+const categories: Category[] = [
+  { slug: "chal", title: "চাল", icon: "🍚" },
+  { slug: "dal", title: "ডাল", icon: "🫘" },
+  { slug: "tel", title: "তেল", icon: "🛢️" },
+  { slug: "sobji", title: "সবজি", icon: "🥬" },
+  { slug: "mach", title: "মাছ", icon: "🐟" },
+  { slug: "mangsho", title: "মাংস", icon: "🍗" },
+  { slug: "dim-dudh", title: "ডিম-দুধ", icon: "🥛" },
+  { slug: "moshla", title: "মসলা", icon: "🌶️" },
+];
 
-          <span className="block text-sm text-gray-600">
-            {formattedDate || "\u00a0"}
-          </span>
-        </span>
-      </Link>
+function formatPrice(value: number) {
+  return Number.isFinite(value)
+    ? value.toLocaleString("bn-BD", {
+        maximumFractionDigits: 2,
+      })
+    : "—";
+}
 
-      <div className="flex items-center gap-3 sm:gap-5">
-        {!isPending && user ? (
-          <>
-            <Link
-              href="/profile"
-              className="flex items-center gap-2 rounded-lg px-2 py-2 hover:bg-gray-100"
-            >
-              <span aria-hidden="true">👤</span>
-              <span className="max-w-36 truncate text-sm font-medium">
-                {user.name || user.email}
-              </span>
-            </Link>
+export default function Navbar({ tickerProducts }: NavbarProps) {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
 
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={isSigningOut}
-              className="text-sm font-medium transition hover:text-red-600 disabled:opacity-50"
-            >
-              {isSigningOut ? "সাইন আউট হচ্ছে..." : "সাইন আউট"}
-            </button>
-          </>
-        ) : !isPending ? (
-          <>
-            <Link
-              href="/signin"
-              className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-gray-100"
-            >
-              সাইন ইন
-            </Link>
+  const user = session?.user;
 
-            <Link
-              href="/signup"
-              className="rounded-lg bg-blue-600 px-3 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-            >
-              সাইন আপ
-            </Link>
-          </>
-        ) : (
-          <span className="text-sm text-gray-500">
-            লোড হচ্ছে...
-          </span>
-        )}
-      </div>
-    </div>
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [formattedDate, setFormattedDate] = useState("");
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
-    {/* Category navigation */}
-    <nav
-      aria-label="পণ্যের বিভাগ"
-      className="relative border-b border-gray-300"
-    >
-      <button
-        type="button"
-        className="my-3 rounded-md border border-gray-300 px-3 py-2 text-sm md:hidden"
-        onClick={() => setMenuOpen((open) => !open)}
-        aria-expanded={menuOpen}
-        aria-label="বিভাগের মেনু"
-      >
-        ☰ বিভাগ
-      </button>
+  // Format the date after mounting to avoid hydration mismatches.
+  useEffect(() => {
+    setFormattedDate(
+      new Intl.DateTimeFormat("bn-BD", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        timeZone: "Asia/Dhaka",
+      }).format(new Date())
+    );
+  }, []);
 
-      <div
-        className={`${menuOpen ? "flex" : "hidden"} flex-col gap-1 py-2 md:flex md:flex-row md:items-center md:justify-between md:gap-2`}
-      >
+  const handleSignOut = async () => {
+    try {
+      setIsSigningOut(true);
+
+      const { error } = await authClient.signOut();
+
+      if (error) {
+        console.error("Sign out failed:", error.message);
+        return;
+      }
+
+      setProfileMenuOpen(false);
+      router.replace("/");
+      router.refresh();
+    } catch (error) {
+      console.error("Sign out failed:", error);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  return (
+    <header className="relative z-40 border-b border-[#E1EAE2] bg-[#FAFCFA] text-[#26332A]">
+      {/* Top navbar */}
+      <div className="mx-auto flex min-h-[48px] max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        {/* Logo and date */}
         <Link
           href="/"
-          className={`rounded-md px-3 py-3 text-sm transition hover:bg-gray-100 ${
-            pathname === "/" ? "font-bold text-blue-700" : ""
-          }`}
+          className="flex min-w-0 items-center gap-2"
+          aria-label="বাজার দর হোম পেজ"
         >
-          হোম
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-[#07883F] text-lg text-white">
+            🛒
+          </span>
+
+          <span className="min-w-0">
+            <span className="block text-sm font-extrabold leading-4">
+              বাজার দর
+            </span>
+
+            <span className="mt-0.5 block text-[9px] leading-3 text-[#7B857D]">
+              {formattedDate || "\u00a0"}
+            </span>
+          </span>
         </Link>
 
-        {categories.map((category) => {
-          const active = pathname === `/category/${category.slug}`;
+        {/* User area */}
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          {!isPending && user ? (
+            <div className="relative">
+              {/* Profile trigger */}
+              <button
+                type="button"
+                onClick={() =>
+                  setProfileMenuOpen((previous) => !previous)
+                }
+                aria-expanded={profileMenuOpen}
+                aria-haspopup="menu"
+                className="flex max-w-[175px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-[#F0F5F0] sm:max-w-[210px]"
+              >
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt=""
+                    className="size-7 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#E4F3E8] text-sm font-bold text-[#07883F]">
+                    {user.name?.trim().charAt(0) || "U"}
+                  </span>
+                )}
 
-          return (
+                <span className="max-w-[100px] truncate text-[10px] font-medium sm:max-w-[130px] sm:text-xs">
+                  {user.name || "ব্যবহারকারী"}
+                </span>
+
+                <span
+                  aria-hidden="true"
+                  className="text-[9px] text-[#7B857D]"
+                >
+                  ⌄
+                </span>
+              </button>
+
+              {/* Profile dropdown */}
+              {profileMenuOpen && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="মেনু বন্ধ করুন"
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setProfileMenuOpen(false)}
+                  />
+
+                  <div
+                    role="menu"
+                    className="absolute right-0 top-full z-50 mt-2 w-[220px] rounded-xl border border-[#E1EAE2] bg-[#FAFCFA] p-2 shadow-[0_8px_24px_rgba(38,51,42,0.16)]"
+                  >
+                    {/* User information */}
+                    <div className="border-b border-[#E8EEE8] px-2.5 py-2">
+                      <p className="truncate text-xs font-bold text-[#26332A]">
+                        {user.name || "ব্যবহারকারী"}
+                      </p>
+
+                      <p className="mt-0.5 truncate text-[10px] text-[#7B857D]">
+                        {user.email}
+                      </p>
+                    </div>
+
+                    {/* Profile link */}
+                    <Link
+                      href="/profile"
+                      role="menuitem"
+                      onClick={() => setProfileMenuOpen(false)}
+                      className="mt-1 flex items-center gap-2 rounded-lg px-2.5 py-2 text-xs text-[#526056] transition hover:bg-[#F0F5F0] hover:text-[#07883F]"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        className="size-3.5"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="8" r="3.5" />
+                        <path d="M5 20c0-3.5 2.8-6 7-6s7 2.5 7 6" />
+                      </svg>
+
+                      আমার প্রোফাইল
+                    </Link>
+
+                    {/* Sign-out button */}
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={handleSignOut}
+                      disabled={isSigningOut}
+                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-2 text-left text-xs text-red-500 transition hover:bg-red-50 disabled:opacity-60"
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.7"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="size-3.5"
+                        aria-hidden="true"
+                      >
+                        <path d="M10 17l5-5-5-5" />
+                        <path d="M15 12H3" />
+                        <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
+                      </svg>
+
+                      {isSigningOut
+                        ? "সাইন আউট হচ্ছে..."
+                        : "সাইন আউট"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          ) : !isPending ? (
+            <>
+              <Link
+                href="/signin"
+                className="rounded-md px-2 py-2 text-xs font-semibold text-[#26332A] transition hover:text-[#07883F]"
+              >
+                সাইন ইন
+              </Link>
+
+              <Link
+                href="/signup"
+                className="rounded-md bg-[#07883F] px-3 py-2 text-xs font-bold text-white transition hover:bg-[#066F34]"
+              >
+                সাইন আপ
+              </Link>
+            </>
+          ) : (
+            <div className="h-7 w-20 animate-pulse rounded-lg bg-[#E4F3E8]" />
+          )}
+        </div>
+      </div>
+
+      {/* Category navigation */}
+      <nav className="border-t border-[#E8EEE8]">
+        <div className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:gap-2 sm:px-6">
+          <Link
+            href="/"
+            className="flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-[10px] font-semibold transition hover:bg-[#E4F3E8] hover:text-[#07883F] sm:text-xs"
+          >
+            <span aria-hidden="true">🏠</span>
+            হোম
+          </Link>
+
+          {categories.map((category) => (
             <Link
               key={category.slug}
               href={`/category/${category.slug}`}
-              className={`rounded-md px-3 py-3 text-sm transition hover:bg-gray-100 ${
-                active ? "font-bold text-blue-700" : ""
-              }`}
+              className="flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-[10px] font-medium transition hover:bg-[#E4F3E8] hover:text-[#07883F] sm:text-xs"
             >
-              {category.name}
+              <span aria-hidden="true">{category.icon}</span>
+              {category.title}
             </Link>
-          );
-        })}
-      </div>
-    </nav>
+          ))}
+        </div>
+      </nav>
 
-    {/* Price ticker */}
-    <div
-      className="overflow-hidden"
-      aria-label="পণ্যের দামের টিকার"
-    >
-      <div className="flex w-max animate-[ticker_30s_linear_infinite] hover:[animation-play-state:paused]">
-        {[...tickerItems, ...tickerItems].map((item, index) => (
-          <div
-            key={`${item.name}-${index}`}
-            className="flex min-h-10 shrink-0 items-center gap-2 border-r border-gray-300 px-5 text-sm text-gray-700"
-          >
-            <span aria-hidden="true">{item.emoji}</span>
-            <span className="whitespace-nowrap">
-              {item.name} {item.price}{item.unit}
-            </span>
+      {/* Scrolling price ticker */}
+      <div className="ticker-container border-y border-[#E1EAE2]">
+        {tickerProducts.length > 0 ? (
+          <div className="ticker-track">
+            {[0, 1].map((copy) => (
+              <div className="ticker-group" key={copy}>
+                {tickerProducts.map((product, index) => {
+                  const isUp = product.change?.dir === "up";
+                  const isDown = product.change?.dir === "down";
+
+                  const changeColor = isUp
+                    ? "text-red-500"
+                    : isDown
+                      ? "text-[#07883F]"
+                      : "text-[#7B857D]";
+
+                  return (
+                    <Link
+                      key={`${copy}-${product.id}-${index}`}
+                      href={`/product/${encodeURIComponent(product.slug)}`}
+                      tabIndex={copy === 0 ? 0 : -1}
+                      aria-hidden={copy === 1}
+                      className="flex h-8 shrink-0 items-center gap-1.5 border-r border-[#E1EAE2] px-3 text-[10px] transition hover:bg-[#F0F5F0]"
+                    >
+                      <span aria-hidden="true">
+                        {product.image || product.categoryIcon || "🛒"}
+                      </span>
+
+                      <span className="text-[#526056]">
+                        {product.nameBn}
+                      </span>
+
+                      <span className="text-[#26332A]">
+                        {formatPrice(product.today)} টাকা/{product.unit}
+                      </span>
+
+                      <span className={`font-semibold ${changeColor}`}>
+                        {isUp ? "▲" : isDown ? "▼" : "—"}
+                        {formatPrice(Math.abs(product.change?.pct ?? 0))}%
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="flex h-8 items-center px-4 text-[10px] text-[#7B857D]">
+            বাজারদরের তথ্য আপাতত পাওয়া যাচ্ছে না।
+          </div>
+        )}
       </div>
-    </div>
-  </div>
-</header>
-
-);
-};
-
-export default Navbar;
+    </header>
+  );
+}

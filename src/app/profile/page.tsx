@@ -1,192 +1,236 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
-import Link from "next/link";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
 
-const ProfilePage = () => {
-const router = useRouter();
-const { data: session, isPending } = authClient.useSession();
+export default function ProfilePage() {
+  const router = useRouter();
+  const { data: session, isPending } = authClient.useSession();
 
-const [name, setName] = useState("");
-const [isSaving, setIsSaving] = useState(false);
-const [isSigningOut, setIsSigningOut] = useState(false);
+  const [name, setName] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [message, setMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
-const user = session?.user;
+  const user = session?.user;
 
-useEffect(() => {
-if (user) {
-setName(user.name || "");
-}
-}, [user?.name]);
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
 
-useEffect(() => {
-if (!isPending && !session?.user) {
-router.replace("/signin?callbackURL=%2Fprofile");
-}
-}, [isPending, session?.user, router]);
+  const handleUpdate = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setMessage("");
+    setErrorMessage("");
 
-const handleUpdateProfile = async (
-event: FormEvent<HTMLFormElement>,
-) => {
-event.preventDefault();
+    if (!name.trim()) {
+      setErrorMessage("আপনার নাম লিখুন।");
+      return;
+    }
 
-const trimmedName = name.trim();
+    try {
+      setIsSaving(true);
 
-if (trimmedName.length < 2) {
-  toast.error("নাম কমপক্ষে ২ অক্ষরের হতে হবে");
-  return;
-}
+      const { error } = await authClient.updateUser({
+        name: name.trim(),
+      });
 
-try {
-  setIsSaving(true);
+      if (error) {
+        setErrorMessage(error.message || "তথ্য আপডেট করা যায়নি।");
+        return;
+      }
 
-  const { error } = await authClient.updateUser({
-    name: trimmedName,
-  });
+      setMessage("আপনার নাম সফলভাবে আপডেট হয়েছে।");
+      router.refresh();
+    } catch {
+      setErrorMessage("একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-  if (error) {
-    toast.error(error.message || "প্রোফাইল আপডেট করা যায়নি");
-    return;
+  const handleSignOut = async () => {
+    setErrorMessage("");
+
+    try {
+      setIsSigningOut(true);
+
+      const { error } = await authClient.signOut();
+
+      if (error) {
+        setErrorMessage(error.message || "সাইন আউট করা যায়নি।");
+        return;
+      }
+
+      router.replace("/");
+      router.refresh();
+    } catch {
+      setErrorMessage("সাইন আউট করা যায়নি। আবার চেষ্টা করুন।");
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
+
+  if (isPending) {
+    return (
+      <main className="min-h-[60vh] bg-[#F0F5F0] px-4 py-12">
+        <div className="mx-auto max-w-3xl animate-pulse">
+          <div className="mb-5 h-5 w-32 rounded bg-[#DCE5DD]" />
+          <div className="h-24 rounded-xl bg-white" />
+          <div className="mt-4 h-36 rounded-xl bg-white" />
+        </div>
+      </main>
+    );
   }
 
-  toast.success("প্রোফাইল সফলভাবে আপডেট হয়েছে");
-  await authClient.getSession();
-  router.refresh();
-} catch (error) {
-  console.error("Profile update failed:", error);
-  toast.error("প্রোফাইল আপডেট করতে সমস্যা হয়েছে");
-} finally {
-  setIsSaving(false);
-}
-
-};
-
-const handleSignOut = async () => {
-try {
-setIsSigningOut(true);
-
-  const { error } = await authClient.signOut();
-
-  if (error) {
-    toast.error(error.message || "সাইন আউট করা যায়নি");
-    return;
-  }
-
-  toast.success("সফলভাবে সাইন আউট হয়েছে");
-  router.replace("/signin");
-  router.refresh();
-} catch (error) {
-  console.error("Sign out failed:", error);
-  toast.error("সাইন আউট করতে সমস্যা হয়েছে");
-} finally {
-  setIsSigningOut(false);
-}
-
-};
-
-if (isPending || !user) {
-return (
-<main className="flex min-h-[70vh] items-center justify-center px-4">
-<div
-       className="h-10 w-10 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600"
-       role="status"
-       aria-label="লোড হচ্ছে"
-     />
-</main>
-);
-}
-
-return (
-<main className="min-h-screen bg-[#f1f7f2] px-4 py-10 text-[#172b40]">
-<div className="mx-auto max-w-2xl">
-<Link
-       href="/"
-       className="mb-6 inline-flex rounded-lg px-3 py-2 text-sm transition hover:bg-gray-200"
-     >
-← হোমে ফিরে যান
-</Link>
-
-    <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:p-10">
-      <header className="text-center">
-        <h1 className="text-3xl font-bold">আমার প্রোফাইল</h1>
-        <p className="mt-2 text-sm text-gray-600 sm:text-base">
-          আপনার অ্যাকাউন্টের তথ্য দেখুন ও আপডেট করুন
+  if (!user) {
+    return (
+      <main className="flex min-h-[50vh] flex-col items-center justify-center bg-[#F0F5F0] px-4 text-center">
+        <h1 className="text-xl font-bold text-[#26332A]">
+          আমার প্রোফাইল
+        </h1>
+        <p className="mt-2 text-sm text-[#7B857D]">
+          প্রোফাইল দেখতে সাইন ইন করুন।
         </p>
-      </header>
-
-      <form onSubmit={handleUpdateProfile} className="mt-8 space-y-5">
-        <div>
-          <label
-            htmlFor="name"
-            className="mb-2 block text-sm font-medium"
-          >
-            আপনার নাম
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-            minLength={2}
-            maxLength={100}
-            autoComplete="name"
-            required
-            disabled={isSaving}
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="email"
-            className="mb-2 block text-sm font-medium"
-          >
-            ইমেইল
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={user.email}
-            className="w-full cursor-not-allowed rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-gray-600"
-            readOnly
-          />
-          <p className="mt-2 text-xs text-gray-500">
-            ইমেইল ঠিকানা এখানে পরিবর্তন করা যাবে না।
-          </p>
-        </div>
-
         <button
-          type="submit"
-          className="w-full rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={isSaving || name.trim() === (user.name || "")}
+          onClick={() => router.push("/signin")}
+          className="mt-4 rounded-lg bg-[#07883F] px-5 py-2.5 text-sm font-bold text-white hover:bg-[#066F34]"
         >
-          {isSaving ? "আপডেট হচ্ছে..." : "প্রোফাইল আপডেট করুন"}
+          সাইন ইন
         </button>
-      </form>
+      </main>
+    );
+  }
 
-      <div className="my-6 flex items-center gap-4">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-sm text-gray-500">অ্যাকাউন্ট</span>
-        <div className="h-px flex-1 bg-gray-200" />
+  const inputClass =
+    "mt-2 h-10 w-full rounded-lg border border-[#E1EAE2] bg-[#FAFCFA] px-3 text-sm text-[#26332A] outline-none transition placeholder:text-[#9AA39B] focus:border-[#07883F] focus:ring-2 focus:ring-[#07883F]/10";
+
+  return (
+    <main className="min-h-[calc(100vh-190px)] bg-[#F0F5F0] px-4 py-8 sm:py-10">
+      <div className="mx-auto max-w-3xl">
+        {/* Page heading */}
+        <header className="mb-5">
+          <h1 className="text-lg font-extrabold text-[#26332A] sm:text-xl">
+            আমার প্রোফাইল
+          </h1>
+          <p className="mt-1 text-xs text-[#7B857D] sm:text-sm">
+            আপনার অ্যাকাউন্টের তথ্য এখানে দেখুন।
+          </p>
+        </header>
+
+        {/* Profile summary card */}
+        <section className="flex items-center gap-3 rounded-xl border border-[#E1EAE2] bg-[#FAFCFA] p-4 sm:gap-4 sm:p-5">
+          {user.image ? (
+            <img
+              src={user.image}
+              alt={`${user.name || "ব্যবহারকারী"}-এর প্রোফাইল`}
+              className="size-12 shrink-0 rounded-lg object-cover sm:size-14"
+            />
+          ) : (
+            <div
+              aria-hidden="true"
+              className="flex size-12 shrink-0 items-center justify-center rounded-lg bg-[#E4F3E8] text-lg font-bold text-[#07883F] sm:size-14"
+            >
+              {(user.name?.trim().charAt(0) || "U").toUpperCase()}
+            </div>
+          )}
+
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-sm font-bold text-[#26332A] sm:text-base">
+              {user.name || "ব্যবহারকারী"}
+            </h2>
+            <p className="mt-1 truncate text-xs text-[#7B857D] sm:text-sm">
+              {user.email}
+            </p>
+          </div>
+
+<button
+  type="button"
+  onClick={handleSignOut}
+  disabled={isSigningOut || isSaving}
+  className="inline-flex h-[34px] shrink-0 items-center justify-center gap-1 rounded-md border border-[#FF9999] bg-transparent px-3 text-xs font-semibold text-red-500 transition-colors hover:bg-red-50 disabled:opacity-60"
+>
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-3.5"
+  >
+    <path d="M10 17l5-5-5-5" />
+    <path d="M15 12H3" />
+    <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
+  </svg>
+
+  {isSigningOut ? "অপেক্ষা করুন..." : "সাইন আউট"}
+</button>
+        </section>
+
+        {/* Information card */}
+        <section className="mt-4 rounded-xl border border-[#E1EAE2] bg-[#FAFCFA] p-4 sm:p-6">
+          <h2 className="mb-5 text-sm font-bold text-[#26332A]">
+            তথ্য
+          </h2>
+
+          <form onSubmit={handleUpdate}>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-xs font-medium text-[#526056]"
+              >
+                নাম
+              </label>
+
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+                placeholder="আপনার নাম লিখুন"
+                autoComplete="name"
+                maxLength={100}
+                required
+                disabled={isSaving}
+                className={inputClass}
+              />
+            </div>
+
+            {message && (
+              <p
+                role="status"
+                className="mt-3 text-xs text-[#07883F]"
+              >
+                {message}
+              </p>
+            )}
+
+            {errorMessage && (
+              <p
+                role="alert"
+                className="mt-3 text-xs text-red-600"
+              >
+                {errorMessage}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={isSaving || isSigningOut}
+              className="mt-3 flex h-10 w-full items-center justify-center rounded-md bg-[#07883F] px-4 text-xs font-bold text-white shadow-sm transition hover:bg-[#066F34] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#07883F] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSaving ? "আপডেট হচ্ছে..." : "আপডেট"}
+            </button>
+          </form>
+        </section>
       </div>
-
-      <button
-        type="button"
-        onClick={handleSignOut}
-        className="w-full rounded-lg border border-red-300 px-4 py-3 font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
-        disabled={isSigningOut}
-      >
-        {isSigningOut ? "সাইন আউট হচ্ছে..." : "সাইন আউট"}
-      </button>
-    </section>
-  </div>
-</main>
-
-);
-};
-
-export default ProfilePage;
+    </main>
+  );
+}

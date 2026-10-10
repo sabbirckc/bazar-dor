@@ -1,5 +1,6 @@
+
 import ProductCard from "./ProductCard";
-import { Product } from "@/types/product";
+import type { Product } from "@/types/product";
 
 interface ProductSectionProps {
   id?: string;
@@ -18,30 +19,44 @@ const ProductSection = ({
     return null;
   }
 
+  const isRising = title.includes("বেড়েছে");
+  const isFalling = title.includes("কমেছে");
+
   return (
     <section
       id={id}
-      className="border-b border-base-300 py-12 sm:py-16"
+      className="bg-[#F0F5F0] px-3 py-4 sm:px-6 sm:py-5 lg:px-8"
     >
-      <div className="mx-auto max-w-6xl px-4">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold sm:text-3xl">
-            {title}
+      <div className="mx-auto max-w-6xl">
+        {/* Section heading */}
+        <div className="mb-3">
+          <h2 className="flex items-center gap-1.5 text-base font-bold leading-6 text-[#26332A] sm:text-lg">
+            {isRising && (
+              <span className="text-xs text-red-500" aria-hidden="true">
+                ▲
+              </span>
+            )}
+
+            {isFalling && (
+              <span className="text-xs text-[#07883F]" aria-hidden="true">
+                ▼
+              </span>
+            )}
+
+            {title.replace(" ▲", "").replace(" ▼", "")}
           </h2>
 
           {description && (
-            <p className="mt-2 text-sm text-base-content/60 sm:text-base">
+            <p className="mt-0.5 text-[10px] leading-4 text-[#7B857D] sm:text-xs">
               {description}
             </p>
           )}
         </div>
 
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {/* Responsive product grid */}
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3">
           {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-            />
+            <ProductCard key={product.id} product={product} />
           ))}
         </div>
       </div>

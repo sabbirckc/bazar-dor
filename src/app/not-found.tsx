@@ -1,34 +1,43 @@
 
 import Link from "next/link";
 
-export default function NotFoundPage() {
+export default function NotFound() {
   return (
-    <main className="flex min-h-[70vh] items-center justify-center px-4 py-12">
-      <section className="w-full max-w-lg text-center">
-        <div className="text-7xl" aria-hidden="true">
+    <main className="flex min-h-[calc(100vh-120px)] items-center justify-center bg-[#F0F5F0] px-4 py-12 text-center">
+      <div className="mx-auto flex max-w-xl flex-col items-center">
+        {/* Illustration */}
+        <div
+          className="mb-5 flex size-16 items-center justify-center rounded-full bg-[#E4F3E8] text-5xl"
+          aria-hidden="true"
+        >
           🔎
         </div>
 
-        <p className="mt-4 text-sm font-semibold uppercase tracking-widest text-blue-600">
+        {/* Error label */}
+        <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-[#07883F]">
           Error 404
         </p>
 
-        <h1 className="mt-3 text-3xl font-bold text-gray-900 sm:text-4xl">
+        {/* Heading */}
+        <h1 className="text-3xl font-extrabold leading-tight text-[#26332A] sm:text-4xl">
           পেজটি খুঁজে পাওয়া যায়নি
         </h1>
 
-        <p className="mt-4 text-gray-600">
+        {/* Description */}
+        <p className="mt-4 max-w-lg text-sm leading-6 text-[#526056] sm:text-base">
           দুঃখিত, আপনি যে পেজটি খুঁজছেন সেটি পাওয়া যায়নি।
           সঠিক ঠিকানা ব্যবহার করুন অথবা হোম পেজে ফিরে যান।
         </p>
 
+        {/* Home button */}
         <Link
           href="/"
-          className="mt-7 inline-flex rounded-lg bg-blue-600 px-6 py-3 font-semibold text-white transition hover:bg-blue-700"
+          className="mt-7 inline-flex items-center justify-center gap-2 rounded-lg bg-[#07883F] px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-[#066F34] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#07883F]"
         >
-          ← হোম পেজে ফিরে যান
+          <span aria-hidden="true">←</span>
+          হোম পেজে ফিরে যান
         </Link>
-      </section>
+      </div>
     </main>
   );
 }
