@@ -1,11 +1,12 @@
-
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { Toaster } from "react-hot-toast";
 
 import "./globals.css";
 import Navbar from "@/component/Navbar";
 import Footer from "@/component/Footer";
+import AuthToastHandler from "@/component/AuthToastHandler";
 
 export const metadata: Metadata = {
   title: "বাজার দর",
@@ -48,12 +49,9 @@ function extractProducts(data: unknown): TickerProduct[] {
   return [];
 }
 
-
 async function getTickerProducts(): Promise<TickerProduct[]> {
   for (const url of API_URLS) {
     try {
-      console.info(`Trying ticker API: ${url}`);
-
       const response = await fetch(url, {
         cache: "no-store",
         signal: AbortSignal.timeout(5000),
@@ -70,22 +68,16 @@ async function getTickerProducts(): Promise<TickerProduct[]> {
       const products = extractProducts(data);
 
       if (products.length > 0) {
-        console.info(
-          `Ticker loaded ${products.length} products from ${url}`
-        );
         return products;
       }
-
-      console.warn(`Ticker API returned no products: ${url}`);
     } catch (error) {
-      console.error(`Ticker API request failed: ${url}`, error);
+      console.error("Ticker API request failed:", url, error);
     }
   }
 
-  console.error("Both ticker APIs failed. Showing fallback.");
+  console.warn("Both ticker APIs failed.");
   return [];
 }
-
 
 async function NavbarWithProducts() {
   await connection();
@@ -102,12 +94,49 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="bn">
-      <body>
+      <body className="flex min-h-screen flex-col bg-[#F0F5F0]">
+        <Toaster
+          position="top-right"
+          reverseOrder={false}
+          containerStyle={{
+            zIndex: 99999,
+          }}
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: "#FAFCFA",
+              color: "#26332A",
+              border: "1px solid #E1EAE2",
+              borderRadius: "12px",
+              padding: "12px 16px",
+            },
+            success: {
+              iconTheme: {
+                primary: "#07883F",
+                secondary: "#FFFFFF",
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: "#DC2626",
+                secondary: "#FFFFFF",
+              },
+            },
+          }}
+        />
+
+        <Suspense fallback={null}>
+          <AuthToastHandler />
+        </Suspense>
+
         <Suspense fallback={<Navbar tickerProducts={[]} />}>
           <NavbarWithProducts />
         </Suspense>
 
-        {children}
+        {/* This wrapper makes flex-1 in page <main> actually grow. */}
+        <div className="flex flex-1 flex-col">
+          {children}
+        </div>
 
         <Footer />
       </body>

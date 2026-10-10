@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
 const SignUpPage = () => {
@@ -20,37 +21,78 @@ const SignUpPage = () => {
     event.preventDefault();
     setErrorMessage("");
 
+    if (name.trim().length < 2) {
+      const message = "নাম কমপক্ষে ২ অক্ষরের হতে হবে।";
+      setErrorMessage(message);
+      toast.error(message);
+      return;
+    }
+
     if (password.length < 8) {
-      setErrorMessage("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।");
+      const message = "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।";
+      setErrorMessage(message);
+      toast.error(message);
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage("দুটি পাসওয়ার্ড মিলছে না।");
+      const message = "দুটি পাসওয়ার্ড মিলছে না।";
+      setErrorMessage(message);
+      toast.error(message);
       return;
     }
 
     try {
       setIsLoading(true);
 
+      toast.loading("অ্যাকাউন্ট তৈরি হচ্ছে...", {
+        id: "signup-status",
+      });
+
+      // No callbackURL here — we redirect manually with a param so
+      // AuthToastHandler can fire the single success toast.
       const { error } = await authClient.signUp.email({
         name: name.trim(),
         email: email.trim(),
         password,
-        callbackURL: "/",
       });
 
       if (error) {
-        setErrorMessage(
-          error.message || "অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।",
-        );
+        const message =
+          error.message ||
+          "অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।";
+
+        setErrorMessage(message);
+
+        toast.error(message, {
+          id: "signup-status",
+          duration: 4000,
+        });
+
         return;
       }
 
-      router.replace("/");
-      router.refresh();
-    } catch {
-      setErrorMessage("একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।");
+      // Clear the loading toast. The success toast is fired by
+      // AuthToastHandler once we land on /?auth=signup-success.
+      toast.dismiss("signup-status");
+
+      // Tiny delay so the dismiss paints before navigation.
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      router.replace("/?auth=signup-success");
+      // NOTE: no router.refresh() — it would remount the tree and
+      // interfere with the toast that AuthToastHandler is about to fire.
+    } catch (error) {
+      console.error("Sign-up error:", error);
+
+      const message =
+        "একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+      setErrorMessage(message);
+
+      toast.error(message, {
+        id: "signup-status",
+        duration: 4000,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -64,15 +106,25 @@ const SignUpPage = () => {
 
       const { error } = await authClient.signIn.social({
         provider,
-        callbackURL: "/",
+        callbackURL: "/?auth=signup-success",
       });
 
       if (error) {
-        setErrorMessage(error.message || "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে।");
+        const message =
+          error.message || "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে।";
+        setErrorMessage(message);
+        toast.error(message);
         setSocialLoading("");
       }
-    } catch {
-      setErrorMessage("সোশ্যাল সাইন আপ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+      // On success, the browser will redirect and AuthToastHandler
+      // will fire the single success toast — no client-side toast here.
+    } catch (error) {
+      console.error("Social sign-up error:", error);
+
+      const message =
+        "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+      setErrorMessage(message);
+      toast.error(message);
       setSocialLoading("");
     }
   };
@@ -184,7 +236,9 @@ const SignUpPage = () => {
               autoComplete="new-password"
               placeholder="আবার লিখুন"
               value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
+              onChange={(event) =>
+                setConfirmPassword(event.target.value)
+              }
               className={inputClass}
               required
               minLength={8}
@@ -211,6 +265,7 @@ const SignUpPage = () => {
             {isLoading ? "অ্যাকাউন্ট তৈরি হচ্ছে..." : "অ্যাকাউন্ট তৈরি করুন"}
           </button>
         </form>
+
         {/* Divider */}
         <div className="my-4 flex items-center gap-3">
           <div className="h-px flex-1 bg-[#E1EAE2]" />

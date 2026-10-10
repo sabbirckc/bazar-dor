@@ -3,261 +3,293 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { authClient } from "@/lib/auth-client";
 
-const SignInPage = () => {
+type SocialProvider = "google" | "github";
+
+export default function SignInPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [socialLoading, setSocialLoading] = useState("");
+  const [socialLoading, setSocialLoading] =
+    useState<SocialProvider | "">("");
+
+  const inputClass =
+    "mt-1.5 h-10 w-full rounded-lg border border-[#E0E8E1] bg-white px-3 text-sm text-[#26332A] outline-none transition placeholder:text-[#9AA39B] focus:border-[#07883F] focus:ring-2 focus:ring-[#07883F]/10 disabled:cursor-not-allowed disabled:opacity-60";
+
+  const socialButtonClass =
+    "flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-[#E1EAE2] bg-white px-2 text-[10px] font-semibold text-[#26332A] transition-colors hover:bg-[#F5F8F5] disabled:cursor-not-allowed disabled:opacity-50 sm:text-xs";
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
 
-    try {
-      setIsLoading(true);
+    if (!email.trim() || !password) {
+      const message = "ইমেইল ও পাসওয়ার্ড লিখুন।";
+      setErrorMessage(message);
+      toast.error(message);
+      return;
+    }
 
+    setIsLoading(true);
+
+    toast.loading("সাইন ইন যাচাই হচ্ছে...", {
+      id: "signin-status",
+    });
+
+    try {
       const { error } = await authClient.signIn.email({
         email: email.trim(),
         password,
-        callbackURL: "/",
       });
 
       if (error) {
-        setErrorMessage(
-          error.message || "সাইন ইন করা যায়নি। আবার চেষ্টা করুন।"
-        );
+        const message =
+          error.message || "সাইন ইন করা যায়নি। আবার চেষ্টা করুন।";
+
+        setErrorMessage(message);
+
+        toast.error(message, {
+          id: "signin-status",
+          duration: 4000,
+        });
+
         return;
       }
 
-      router.replace("/");
-      router.refresh();
-    } catch {
-      setErrorMessage("একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।");
+      toast.dismiss("signin-status");
+
+      await new Promise((resolve) => setTimeout(resolve, 300));
+
+      const params = new URLSearchParams(window.location.search);
+      const callbackUrl = params.get("callbackUrl");
+
+      const base =
+        callbackUrl?.startsWith("/") && !callbackUrl.startsWith("//")
+          ? callbackUrl
+          : "/";
+
+      const separator = base.includes("?") ? "&" : "?";
+      const destination = `${base}${separator}auth=success`;
+
+      router.replace(destination);
+    } catch (error) {
+      console.error("Sign-in error:", error);
+
+      const message = "একটি সমস্যা হয়েছে। আবার চেষ্টা করুন।";
+      setErrorMessage(message);
+
+      toast.error(message, {
+        id: "signin-status",
+        duration: 4000,
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialSignIn = async (
-    provider: "google" | "github"
-  ) => {
+  const handleSocialSignIn = async (provider: SocialProvider) => {
     setErrorMessage("");
+    setSocialLoading(provider);
 
     try {
-      setSocialLoading(provider);
-
       const { error } = await authClient.signIn.social({
         provider,
-        callbackURL: "/",
+        callbackURL: "/?auth=success",
       });
 
       if (error) {
-        setErrorMessage(
-          error.message || "সোশ্যাল সাইন ইন ব্যর্থ হয়েছে।"
-        );
+        const message =
+          error.message || "সোশ্যাল সাইন ইন ব্যর্থ হয়েছে।";
+
+        setErrorMessage(message);
+        toast.error(message);
         setSocialLoading("");
       }
-    } catch {
-      setErrorMessage("সাইন ইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+    } catch (error) {
+      console.error("Social sign-in error:", error);
+
+      const message = "সাইন ইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+      setErrorMessage(message);
+      toast.error(message);
       setSocialLoading("");
     }
   };
 
-  const inputClass =
-    "mt-1.5 block h-11 w-full rounded-lg border border-[#DCE5DD] bg-white px-3 text-sm text-[#26332A] outline-none transition placeholder:text-[#9AA39B] focus:border-[#07883F] focus:ring-2 focus:ring-[#07883F]/15 disabled:cursor-not-allowed disabled:opacity-60";
-
-  const socialButtonClass =
-    "flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-[#DCE5DD] bg-white px-2 text-xs font-semibold text-[#26332A] transition hover:bg-[#F4F8F4] hover:border-[#B8CDBB] disabled:cursor-not-allowed disabled:opacity-60 sm:text-sm";
-
   return (
-    <main className="flex min-h-[calc(100vh-150px)] flex-col items-center justify-center bg-[#F0F5F0] px-4 py-10">
-      <div className="w-full max-w-[400px]">
-        {/* Heading */}
-        <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-xl bg-[#07883F] text-2xl shadow-sm">
-            <span role="img" aria-label="বাজারের ট্রলি">
-              🛒
-            </span>
+    <main className="flex flex-1 flex-col items-center bg-[#F0F5F0] px-4 py-10 sm:py-14">
+      {/* Page heading */}
+      <div className="mb-6 text-center">
+        <h1 className="text-2xl font-extrabold tracking-tight text-[#26332A] sm:text-3xl">
+          সাইন ইন
+        </h1>
+
+        <p className="mt-2 text-sm text-[#7B857D]">
+          বিস্তারিত দাম, বাজার তুলনা ও প্রোফাইল দেখতে অ্যাকাউন্টে ঢুকুন।
+        </p>
+      </div>
+
+      {/* Signin card */}
+      <div className="w-full max-w-[400px] rounded-2xl border border-[#E1EAE2] bg-[#FAFCFA] p-6 sm:p-7">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div>
+            <label
+              htmlFor="signin-email"
+              className="block text-sm font-semibold text-[#26332A]"
+            >
+              ইমেইল
+            </label>
+
+            <input
+              id="signin-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className={inputClass}
+              required
+              disabled={isLoading || socialLoading !== ""}
+            />
           </div>
 
-          <h1 className="text-2xl font-extrabold tracking-tight text-[#26332A] sm:text-3xl">
-            বাজার দর
-          </h1>
+          {/* Password */}
+          <div>
+            <label
+              htmlFor="signin-password"
+              className="block text-sm font-semibold text-[#26332A]"
+            >
+              পাসওয়ার্ড
+            </label>
 
-          <p className="mt-2 text-sm text-[#7B857D]">
-            আপনার অ্যাকাউন্টে সাইন ইন করুন
-          </p>
+            <input
+              id="signin-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="আপনার পাসওয়ার্ড লিখুন"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className={inputClass}
+              required
+              disabled={isLoading || socialLoading !== ""}
+            />
+          </div>
+
+          {/* Error message */}
+          {errorMessage && (
+            <p
+              role="alert"
+              className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700"
+            >
+              {errorMessage}
+            </p>
+          )}
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isLoading || socialLoading !== ""}
+            className="flex h-11 w-full items-center justify-center rounded-lg bg-[#07883F] px-4 text-sm font-bold text-white transition-colors hover:bg-[#066F34] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#07883F] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoading ? "সাইন ইন হচ্ছে..." : "সাইন ইন"}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="my-5 flex items-center gap-3">
+          <div className="h-px flex-1 bg-[#E1EAE2]" />
+          <span className="text-xs text-[#7B857D]">অথবা</span>
+          <div className="h-px flex-1 bg-[#E1EAE2]" />
         </div>
 
-        {/* Sign-in card */}
-        <div className="rounded-2xl border border-[#E1EAE2] bg-[#FAFCFA] p-5 shadow-[0_8px_30px_rgba(38,51,42,0.06)] sm:p-7">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-semibold text-[#26332A]"
-              >
-                ইমেইল
-              </label>
-
-              <input
-                id="email"
-                name="email"
-                type="email"
-                autoComplete="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className={inputClass}
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Password */}
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-semibold text-[#26332A]"
-              >
-                পাসওয়ার্ড
-              </label>
-
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                placeholder="কমপক্ষে ৮ অক্ষর"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className={inputClass}
-                required
-                disabled={isLoading}
-              />
-            </div>
-
-            {/* Error message */}
-            {errorMessage && (
-              <p
-                role="alert"
-                className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs leading-5 text-red-700"
-              >
-                {errorMessage}
-              </p>
-            )}
-
-            {/* Submit button */}
-            <button
-              type="submit"
-              disabled={isLoading || socialLoading !== ""}
-              className="flex h-11 w-full items-center justify-center rounded-lg bg-[#07883F] px-4 text-sm font-bold text-white transition hover:bg-[#066F34] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#07883F] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+        {/* Social signin */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Google */}
+          <button
+            type="button"
+            onClick={() => handleSocialSignIn("google")}
+            disabled={isLoading || socialLoading !== ""}
+            className={socialButtonClass}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 48 48"
+              className="size-[18px] shrink-0"
             >
-              {isLoading ? "সাইন ইন হচ্ছে..." : "সাইন ইন"}
-            </button>
-          </form>
-
-          {/* Divider */}
-          <div className="my-5 flex items-center gap-3">
-            <div className="h-px flex-1 bg-[#E1EAE2]" />
-            <span className="text-xs text-[#7B857D]">অথবা</span>
-            <div className="h-px flex-1 bg-[#E1EAE2]" />
-          </div>
-
-          {/* Social sign-in */}
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => handleSocialSignIn("google")}
-              disabled={isLoading || socialLoading !== ""}
-              className={socialButtonClass}
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 48 48"
-                className="size-[18px] shrink-0"
-              >
-                <path
-                  fill="#EA4335"
-                  d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5Z"
-                  transform="translate(0 5)"
-                />
-                <path
-                  fill="#4285F4"
-                  d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.73 7.18l7.64 5.93c4.46-4.13 7.13-10.2 7.13-17.58Z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a23.98 23.98 0 0 0 0 21.56l7.98-6.19Z"
-                  transform="translate(0 5)"
-                />
-                <path
-                  fill="#34A853"
-                  d="M24 48c6.48 0 11.93-2.13 15.9-5.87l-7.64-5.93c-2.12 1.42-4.84 2.26-8.26 2.26-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z"
-                  transform="translate(0 -3)"
-                />
-              </svg>
+              <path
+                fill="#4285F4"
+                d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.4 9.4 0 0 1-4.1 6.2v5.1h6.6c3.9-3.6 6.1-8.8 6.1-15Z"
+              />
+              <path
+                fill="#34A853"
+                d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.6-5.1c-1.8 1.2-4 1.9-6.9 1.9-5.3 0-9.8-3.6-11.4-8.4H5.8v5.2A20 20 0 0 0 24 44Z"
+              />
+              <path
+                fill="#FBBC05"
+                d="M12.6 27.5a12 12 0 0 1 0-7v-5.2H5.8a20 20 0 0 0 0 17.4l6.8-5.2Z"
+              />
+              <path
+                fill="#EA4335"
+                d="M24 12.1c3 0 5.7 1 7.8 3.1l5.8-5.8C34.1 6.1 29.5 4 24 4A20 20 0 0 0 5.8 15.3l6.8 5.2c1.6-4.8 6.1-8.4 11.4-8.4Z"
+              />
+            </svg>
 
             <span className="truncate">
               {socialLoading === "google"
                 ? "অপেক্ষা করুন..."
                 : "Google দিয়ে চালিয়ে যান"}
             </span>
-            </button>
+          </button>
 
-            <button
-              type="button"
-              onClick={() => handleSocialSignIn("github")}
-              disabled={isLoading || socialLoading !== ""}
-              className={socialButtonClass}
+          {/* GitHub */}
+          <button
+            type="button"
+            onClick={() => handleSocialSignIn("github")}
+            disabled={isLoading || socialLoading !== ""}
+            className={socialButtonClass}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-[18px] shrink-0 fill-current"
             >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="size-[18px] shrink-0 fill-current"
-              >
-                <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.1c-3.1.67-3.76-1.32-3.76-1.32-.5-1.28-1.24-1.62-1.24-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 .1.7 2.34 3.17 1.78.1-.72.39-1.21.7-1.49-2.48-.28-5.09-1.24-5.09-5.52 0-1.22.44-2.21 1.15-2.99-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.14a10.6 10.6 0 0 1 5.56 0c2.11-1.44 3.05-1.14 3.05-1.14.61 1.53.23 2.67.11 2.95.72.78 1.15 1.77 1.15 2.99 0 4.29-2.62 5.24-5.11 5.52.4.35.75 1.02.75 2.06v3.06c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z" />
-              </svg>
+              <path d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.1c-3.1.68-3.76-1.32-3.76-1.32-.51-1.29-1.24-1.63-1.24-1.63-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 .1.98 2.19 3.16 1.55.1-.72.4-1.22.69-1.5-2.48-.28-5.08-1.24-5.08-5.52 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.96 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.56 0c2.12-1.44 3.05-1.15 3.05-1.15.61 1.54.23 2.68.11 2.96.72.78 1.15 1.78 1.15 3 0 4.29-2.6 5.23-5.09 5.51.4.35.75 1.02.75 2.06v3.06c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z" />
+            </svg>
 
             <span className="truncate">
               {socialLoading === "github"
                 ? "অপেক্ষা করুন..."
                 : "GitHub দিয়ে চালিয়ে যান"}
             </span>
-            </button>
-          </div>
-
-          {/* Sign-up link */}
-          <p className="mt-5 text-center text-xs leading-5 text-[#68736A] sm:text-sm">
-            অ্যাকাউন্ট নেই?{" "}
-            <Link
-              href="/signup"
-              className="font-bold text-[#07883F] hover:underline"
-            >
-              সাইন আপ করুন
-            </Link>
-          </p>
+          </button>
         </div>
 
-        {/* Back home */}
-        <div className="mt-5 text-center">
+        {/* Signup link */}
+        <p className="mt-5 text-center text-xs leading-5 text-[#68736A] sm:text-sm">
+          অ্যাকাউন্ট নেই?{" "}
           <Link
-            href="/"
-            className="inline-flex items-center gap-1 text-xs text-[#7B857D] transition hover:text-[#07883F] sm:text-sm"
+            href="/signup"
+            className="font-bold text-[#07883F] hover:underline"
           >
-            <span aria-hidden="true">←</span>
-            হোম পেজে ফিরে যান
+            সাইন আপ করুন
           </Link>
-        </div>
+        </p>
       </div>
+
+      {/* Back home */}
+      <Link
+        href="/"
+        className="mt-5 text-xs text-[#7B857D] transition-colors hover:text-[#07883F] sm:text-sm"
+      >
+        ← হোম পেজে ফিরে যান
+      </Link>
     </main>
   );
-};
-
-export default SignInPage;
+}
