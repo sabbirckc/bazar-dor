@@ -8,12 +8,14 @@ import {
 } from "@/lib/api";
 import type { Product } from "@/types/product";
 
+// Shape of a single category entry
 interface CategoryInfo {
   name: string;
   icon: string;
   aliases: string[];
 }
 
+// All known categories, keyed by their URL slug
 const CATEGORIES: Record<string, CategoryInfo> = {
   chal: {
     name: "চাল",
@@ -68,10 +70,12 @@ const CATEGORIES: Record<string, CategoryInfo> = {
   },
 };
 
+// Make a string lowercase, trim spaces, and turn spaces/underscores into dashes
 function normalize(value: string): string {
   return value.trim().toLowerCase().replace(/[_\s]+/g, "-");
 }
 
+// Pull out a product list from whatever shape the API returns
 function extractProducts(response: unknown): Product[] {
   if (Array.isArray(response)) {
     return response as Product[];
@@ -95,25 +99,20 @@ function extractProducts(response: unknown): Product[] {
     typeof result.data === "object" &&
     result.data !== null &&
     "products" in result.data &&
-    Array.isArray(
-      (result.data as { products: unknown }).products
-    )
+    Array.isArray((result.data as { products: unknown }).products)
   ) {
-    return (
-      result.data as { products: Product[] }
-    ).products;
+    return (result.data as { products: Product[] }).products;
   }
 
   return [];
 }
 
+// Pull out a category object from whatever shape the API returns
 function extractCategory(
   response: unknown
 ): Record<string, unknown> | null {
   if (Array.isArray(response)) {
-    return (
-      (response[0] as Record<string, unknown>) ?? null
-    );
+    return (response[0] as Record<string, unknown>) ?? null;
   }
 
   if (typeof response !== "object" || response === null) {
@@ -123,38 +122,22 @@ function extractCategory(
   const result = response as Record<string, unknown>;
 
   if (Array.isArray(result.data)) {
-    return (
-      (result.data[0] as Record<string, unknown>) ?? null
-    );
+    return (result.data[0] as Record<string, unknown>) ?? null;
   }
 
-  if (
-    typeof result.data === "object" &&
-    result.data !== null
-  ) {
+  if (typeof result.data === "object" && result.data !== null) {
     return result.data as Record<string, unknown>;
   }
 
   return result;
 }
 
-function matchesCategory(
-  product: Product,
-  slug: string
-): boolean {
-  const aliases = [
-    slug,
-    ...(CATEGORIES[slug]?.aliases ?? []),
-  ].map(normalize);
+// Check if a product belongs to the given category slug
+function matchesCategory(product: Product, slug: string): boolean {
+  const aliases = [slug, ...(CATEGORIES[slug]?.aliases ?? [])].map(normalize);
 
-  const values = [
-    product.category,
-    product.categoryNameBn,
-  ]
-    .filter(
-      (value): value is string =>
-        typeof value === "string"
-    )
+  const values = [product.category, product.categoryNameBn]
+    .filter((value): value is string => typeof value === "string")
     .map(normalize);
 
   return values.some((value) =>
@@ -167,6 +150,7 @@ function matchesCategory(
   );
 }
 
+// Fetch all products without crashing the page on error
 async function safelyFetchAllProducts(): Promise<Product[]> {
   try {
     return extractProducts(await fetchProducts());
@@ -176,6 +160,7 @@ async function safelyFetchAllProducts(): Promise<Product[]> {
   }
 }
 
+// Fetch a single category without crashing the page on error
 async function safelyFetchCategory(
   slug: string
 ): Promise<Record<string, unknown> | null> {
@@ -199,11 +184,9 @@ export default async function CategoryPage({
 
   let products: Product[] = [];
 
-  // First, try fetching products directly by category.
+  // Step 1: try to get products for this category directly from the API
   try {
-    products = extractProducts(
-      await getProductsByCategory(slug)
-    );
+    products = extractProducts(await getProductsByCategory(slug));
   } catch (error) {
     console.error(
       `Failed to fetch category products for "${slug}":`,
@@ -211,8 +194,7 @@ export default async function CategoryPage({
     );
   }
 
-  // If the filtered request returns no products,
-  // fetch all products and filter them locally.
+  // Step 2: if nothing came back, fetch everything and filter locally
   if (products.length === 0) {
     const allProducts = await safelyFetchAllProducts();
 
@@ -224,26 +206,23 @@ export default async function CategoryPage({
   const category = await safelyFetchCategory(slug);
   const firstProduct = products[0];
 
+  // Figure out the best name we can show
   const categoryName =
-    (typeof category?.nameBn === "string" &&
-      category.nameBn) ||
-    (typeof category?.name === "string" &&
-      category.name) ||
-    (typeof category?.title === "string" &&
-      category.title) ||
+    (typeof category?.nameBn === "string" && category.nameBn) ||
+    (typeof category?.name === "string" && category.name) ||
+    (typeof category?.title === "string" && category.title) ||
     firstProduct?.categoryNameBn ||
     fallback?.name;
 
+  // Figure out the best icon we can show
   const categoryIcon =
-    (typeof category?.icon === "string" &&
-      category.icon) ||
-    (typeof category?.categoryIcon === "string" &&
-      category.categoryIcon) ||
+    (typeof category?.icon === "string" && category.icon) ||
+    (typeof category?.categoryIcon === "string" && category.categoryIcon) ||
     firstProduct?.categoryIcon ||
     fallback?.icon ||
     "🛒";
 
-  // Only show 404 when the category is genuinely unknown.
+  // Show 404 only when the category truly doesn't exist
   if (!categoryName) {
     notFound();
   }
@@ -251,28 +230,24 @@ export default async function CategoryPage({
   return (
     <main className="min-h-[60vh] bg-[#F0F5F0]">
       <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        {/* Breadcrumb */}
+        {/* Breadcrumb navigation */}
         <nav
           aria-label="Breadcrumb"
           className="mb-4 flex items-center gap-2 text-xs text-[#7B857D]"
         >
-          <Link
-            href="/"
-            className="transition-colors hover:text-[#07883F]"
-          >
+          <Link href="/" className="transition-colors hover:text-[#07883F]">
             হোম
           </Link>
 
           <span aria-hidden="true">/</span>
 
-          <span className="text-[#26332A]">
-            {categoryName}
-          </span>
+          <span className="text-[#26332A]">{categoryName}</span>
         </nav>
 
-        {/* Category heading */}
+        {/* Category heading card */}
         <section className="mb-6 rounded-2xl border border-[#E1EAE2] bg-[#FAFCFA] p-5 sm:p-6">
           <div className="flex items-center gap-4">
+            {/* Category icon */}
             <div className="flex size-14 shrink-0 items-center justify-center rounded-xl bg-[#EAF5EC] text-3xl">
               {categoryIcon}
             </div>
@@ -283,14 +258,13 @@ export default async function CategoryPage({
               </h1>
 
               <p className="mt-1 text-xs leading-5 text-[#7B857D] sm:text-sm">
-                এই বিভাগের নিত্যপ্রয়োজনীয় পণ্যের
-                বর্তমান বাজারদর দেখুন।
+                এই বিভাগের নিত্যপ্রয়োজনীয় পণ্যের বর্তমান বাজারদর দেখুন।
               </p>
             </div>
           </div>
         </section>
 
-        {/* Sorting and product grid */}
+        {/* Product list with sorting controls */}
         <CategoryProductList products={products} />
       </div>
     </main>

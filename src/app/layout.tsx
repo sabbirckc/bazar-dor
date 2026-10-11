@@ -8,11 +8,13 @@ import Navbar from "@/component/Navbar";
 import Footer from "@/component/Footer";
 import AuthToastHandler from "@/component/AuthToastHandler";
 
+// Page title and description used by Next.js
 export const metadata: Metadata = {
   title: "বাজার দর",
   description: "প্রয়োজনীয় পণ্যের দাম এক নজরে।",
 };
 
+// Shape of a product shown in the navbar ticker
 interface TickerProduct {
   id: number;
   slug: string;
@@ -27,11 +29,13 @@ interface TickerProduct {
   };
 }
 
+// Try these APIs in order until one works
 const API_URLS = [
   "https://api.api-store.workers.dev/api/bazardor/products",
   "https://api.abcz.workers.dev/api/bazardor/products",
 ];
 
+// Pull the product array out of whatever shape the API returns
 function extractProducts(data: unknown): TickerProduct[] {
   if (Array.isArray(data)) {
     return data as TickerProduct[];
@@ -49,6 +53,7 @@ function extractProducts(data: unknown): TickerProduct[] {
   return [];
 }
 
+// Fetch ticker products, falling back to the next URL on failure
 async function getTickerProducts(): Promise<TickerProduct[]> {
   for (const url of API_URLS) {
     try {
@@ -79,6 +84,7 @@ async function getTickerProducts(): Promise<TickerProduct[]> {
   return [];
 }
 
+// Server component that loads ticker data, then renders the Navbar
 async function NavbarWithProducts() {
   await connection();
 
@@ -95,6 +101,7 @@ export default function RootLayout({
   return (
     <html lang="bn">
       <body className="flex min-h-screen flex-col bg-[#F0F5F0]">
+        {/* Global toast notifications */}
         <Toaster
           position="top-right"
           reverseOrder={false}
@@ -125,18 +132,18 @@ export default function RootLayout({
           }}
         />
 
+        {/* Handles auth-related success toasts */}
         <Suspense fallback={null}>
           <AuthToastHandler />
         </Suspense>
 
+        {/* Navbar with ticker products; shows empty ticker while loading */}
         <Suspense fallback={<Navbar tickerProducts={[]} />}>
           <NavbarWithProducts />
         </Suspense>
 
         {/* This wrapper makes flex-1 in page <main> actually grow. */}
-        <div className="flex flex-1 flex-col">
-          {children}
-        </div>
+        <div className="flex flex-1 flex-col">{children}</div>
 
         <Footer />
       </body>

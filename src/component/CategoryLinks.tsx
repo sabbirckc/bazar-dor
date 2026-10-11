@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+// A category may come in many shapes — accept them all
 interface Category {
   slug?: string;
   title?: string;
@@ -24,7 +25,7 @@ const CategoryLinks = ({ categories }: CategoryLinksProps) => {
   return (
     <nav className="w-full overflow-x-auto">
       <div className="flex min-w-max items-center justify-start gap-2 py-3 lg:justify-center">
-        {/* Home */}
+        {/* Home link (highlighted when on "/") */}
         <Link
           href="/"
           className={`rounded-full px-4 py-2 text-sm font-medium transition ${
@@ -36,11 +37,13 @@ const CategoryLinks = ({ categories }: CategoryLinksProps) => {
           হোম
         </Link>
 
-        {/* Categories */}
+        {/* Category links */}
         {categories.map((category, index) => {
+          // Figure out a usable slug from whatever field exists
           const slug =
             category.slug || category.category || category.name || "";
 
+          // Figure out a display title, falling back to the slug
           const title =
             category.title ||
             category.name ||
@@ -48,12 +51,12 @@ const CategoryLinks = ({ categories }: CategoryLinksProps) => {
             category.label ||
             slug;
 
+          // Skip categories that have no slug
           if (!slug) {
             return null;
           }
 
           const href = `/category/${slug}`;
-
           const isActive = pathname === href;
 
           return (

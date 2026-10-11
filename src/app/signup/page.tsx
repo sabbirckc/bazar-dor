@@ -9,6 +9,7 @@ import { authClient } from "@/lib/auth-client";
 const SignUpPage = () => {
   const router = useRouter();
 
+  // Form and UI state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -17,10 +18,12 @@ const SignUpPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState("");
 
+  // Email + password sign-up
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage("");
 
+    // Basic validation before hitting the API
     if (name.trim().length < 2) {
       const message = "নাম কমপক্ষে ২ অক্ষরের হতে হবে।";
       setErrorMessage(message);
@@ -59,8 +62,7 @@ const SignUpPage = () => {
 
       if (error) {
         const message =
-          error.message ||
-          "অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।";
+          error.message || "অ্যাকাউন্ট তৈরি করা যায়নি। আবার চেষ্টা করুন।";
 
         setErrorMessage(message);
 
@@ -85,8 +87,7 @@ const SignUpPage = () => {
     } catch (error) {
       console.error("Sign-up error:", error);
 
-      const message =
-        "একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+      const message = "একটি সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
       setErrorMessage(message);
 
       toast.error(message, {
@@ -98,6 +99,7 @@ const SignUpPage = () => {
     }
   };
 
+  // Google / GitHub sign-up
   const handleSocialSignUp = async (provider: "google" | "github") => {
     setErrorMessage("");
 
@@ -110,8 +112,7 @@ const SignUpPage = () => {
       });
 
       if (error) {
-        const message =
-          error.message || "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে।";
+        const message = error.message || "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে।";
         setErrorMessage(message);
         toast.error(message);
         setSocialLoading("");
@@ -121,14 +122,14 @@ const SignUpPage = () => {
     } catch (error) {
       console.error("Social sign-up error:", error);
 
-      const message =
-        "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
+      const message = "সোশ্যাল সাইন আপ ব্যর্থ হয়েছে। আবার চেষ্টা করুন।";
       setErrorMessage(message);
       toast.error(message);
       setSocialLoading("");
     }
   };
 
+  // Shared input styling
   const inputClass =
     "mt-1.5 h-10 w-full rounded-lg border border-[#E0E8E1] bg-[#FAFCFA] px-3 text-sm text-[#26332A] outline-none transition placeholder:text-[#9AA39B] focus:border-[#07883F] focus:ring-2 focus:ring-[#07883F]/10";
 
@@ -236,9 +237,7 @@ const SignUpPage = () => {
               autoComplete="new-password"
               placeholder="আবার লিখুন"
               value={confirmPassword}
-              onChange={(event) =>
-                setConfirmPassword(event.target.value)
-              }
+              onChange={(event) => setConfirmPassword(event.target.value)}
               className={inputClass}
               required
               minLength={8}
@@ -266,14 +265,14 @@ const SignUpPage = () => {
           </button>
         </form>
 
-        {/* Divider */}
+        {/* Divider: "or" */}
         <div className="my-4 flex items-center gap-3">
           <div className="h-px flex-1 bg-[#E1EAE2]" />
           <span className="text-[10px] text-[#7B857D]">অথবা</span>
           <div className="h-px flex-1 bg-[#E1EAE2]" />
         </div>
 
-        {/* Social signup */}
+        {/* Social sign-up buttons */}
         <div className="grid grid-cols-2 gap-2">
           {/* Google */}
           <button
@@ -335,7 +334,7 @@ const SignUpPage = () => {
           </button>
         </div>
 
-        {/* Sign in link */}
+        {/* Link to sign in */}
         <p className="mt-4 text-center text-[10px] text-[#68736A] sm:text-xs">
           অ্যাকাউন্ট আছে?{" "}
           <Link
@@ -347,7 +346,7 @@ const SignUpPage = () => {
         </p>
       </div>
 
-      {/* Back home */}
+      {/* Back to home link */}
       <Link
         href="/"
         className="mt-5 text-xs text-[#7B857D] transition-colors hover:text-[#07883F]"

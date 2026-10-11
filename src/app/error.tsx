@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -8,30 +7,33 @@ interface ErrorPageProps {
   reset: () => void;
 }
 
-export default function GlobalError({
-  error,
-  reset,
-}: ErrorPageProps) {
+export default function GlobalError({ error, reset }: ErrorPageProps) {
+  // Log the error so we can debug it later
   useEffect(() => {
     console.error("Application error:", error);
   }, [error]);
 
   return (
+    // Center the error card on the screen
     <main className="flex min-h-[70vh] items-center justify-center px-4 py-12">
       <section className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-8 text-center shadow-sm">
+        {/* Sad face icon */}
         <div className="text-5xl" aria-hidden="true">
           😕
         </div>
 
+        {/* Main title */}
         <h1 className="mt-5 text-2xl font-bold text-gray-900">
           কিছু একটা সমস্যা হয়েছে
         </h1>
 
+        {/* Short apology note */}
         <p className="mt-3 text-gray-600">
           দুঃখিত, পেজটি লোড করার সময় সমস্যা হয়েছে।
           আবার চেষ্টা করুন।
         </p>
 
+        {/* Retry button + back-home link */}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             type="button"

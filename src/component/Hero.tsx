@@ -1,8 +1,8 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 const Hero = () => {
   const [formattedDate, setFormattedDate] = useState("");
@@ -24,9 +24,9 @@ const Hero = () => {
     <section className="bg-[#F0F5F0] px-3 py-3 sm:px-6 sm:py-5 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <div className="grid items-center gap-2 rounded-2xl border border-[#E3EBE4] bg-[#FAFCFA] p-4 sm:gap-6 sm:p-6 lg:grid-cols-[1.3fr_0.7fr] lg:gap-8 lg:p-8">
-          {/* Left: Hero content */}
+          {/* Left side: date, heading, description, button */}
           <div className="min-w-0">
-            {/* Bengali date badge */}
+            {/* Bengali date badge (empty space reserved before it loads) */}
             <p className="mb-2 inline-flex rounded-full bg-[#E4F3E8] px-3 py-1 text-[10px] font-semibold text-[#07883F] sm:text-xs">
               {formattedDate || "\u00a0"}
             </p>
@@ -36,14 +36,14 @@ const Hero = () => {
               আজকের বাজারের দাম এক নজরে
             </h1>
 
-            {/* Description */}
+            {/* Short description */}
             <p className="mt-2 max-w-xl text-xs leading-5 text-[#788078] sm:mt-3 sm:text-sm sm:leading-6">
               চাল, ডাল, তেল, সবজি, মাছ, মাংসসহ নিত্যপ্রয়োজনীয়
               পণ্যের বর্তমান বাজারদর জানুন — বাজারদরভিত্তিক
               বিস্তারিত তথ্য এক জায়গায়।
             </p>
 
-            {/* Call to action */}
+            {/* Scroll-down button to the "all products" section */}
             <div className="mt-4">
               <Link
                 href="#সব-পণ্য"
@@ -55,27 +55,17 @@ const Hero = () => {
             </div>
           </div>
 
-          {/* Right: Basket illustration */}
-          <div className="flex items-center justify-center py-1 lg:justify-end">
+          {/* Right side: basket illustration */}
+          <div className="flex items-center justify-center py-2 lg:justify-end">
             <div className="flex flex-col items-center">
-              <span
-                className="text-6xl leading-none sm:text-7xl lg:text-8xl"
-                role="img"
-                aria-label="বাজারের ঝুড়ি"
-              >
-                🧺
-              </span>
-
-              <div className="mt-1.5 flex items-center gap-2 text-xl sm:gap-3 sm:text-2xl lg:text-3xl">
-                <span aria-hidden="true">🍅</span>
-                <span aria-hidden="true">🥬</span>
-                <span aria-hidden="true">🥕</span>
-                <span aria-hidden="true">🥔</span>
-              </div>
-
-              <p className="mt-1 text-center text-[10px] text-[#788078] sm:text-xs">
-                নিত্যপ্রয়োজনীয় পণ্যের বাজারদর
-              </p>
+              <Image
+                src="/bazar-hero.png"
+                alt="বাজার দর - তাজা ফল ও সবজির ঝুড়ি"
+                width={300}
+                height={300}
+                priority
+                className="h-auto w-[170px] object-contain sm:w-[220px] lg:w-[280px]"
+              />
             </div>
           </div>
         </div>

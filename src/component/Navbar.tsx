@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from "react";
@@ -6,12 +5,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 
+// A category shown in the nav bar
 interface Category {
   slug: string;
   title: string;
   icon: string;
 }
 
+// A product shown in the scrolling ticker
 interface TickerProduct {
   id: number;
   slug: string;
@@ -30,6 +31,7 @@ interface NavbarProps {
   tickerProducts: TickerProduct[];
 }
 
+// Fixed list of categories shown in the second row
 const categories: Category[] = [
   { slug: "chal", title: "চাল", icon: "🍚" },
   { slug: "dal", title: "ডাল", icon: "🫘" },
@@ -41,11 +43,10 @@ const categories: Category[] = [
   { slug: "moshla", title: "মসলা", icon: "🌶️" },
 ];
 
+// Format a number into Bengali style, or "—" if invalid
 function formatPrice(value: number) {
   return Number.isFinite(value)
-    ? value.toLocaleString("bn-BD", {
-        maximumFractionDigits: 2,
-      })
+    ? value.toLocaleString("bn-BD", { maximumFractionDigits: 2 })
     : "—";
 }
 
@@ -55,6 +56,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
 
   const user = session?.user;
 
+  // UI state
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const [formattedDate, setFormattedDate] = useState("");
   const [isSigningOut, setIsSigningOut] = useState(false);
@@ -72,6 +74,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
     );
   }, []);
 
+  // Sign the user out and send them home
   const handleSignOut = async () => {
     try {
       setIsSigningOut(true);
@@ -95,9 +98,9 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
 
   return (
     <header className="relative z-40 border-b border-[#E1EAE2] bg-[#FAFCFA] text-[#26332A]">
-      {/* Top navbar */}
+      {/* Top row: logo + date on the left, user area on the right */}
       <div className="mx-auto flex min-h-[48px] max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        {/* Logo and date */}
+        {/* Logo and today's date */}
         <Link
           href="/"
           className="flex min-w-0 items-center gap-2"
@@ -118,16 +121,14 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
           </span>
         </Link>
 
-        {/* User area */}
+        {/* User area: profile menu, or sign-in/sign-up, or a loader */}
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
           {!isPending && user ? (
             <div className="relative">
-              {/* Profile trigger */}
+              {/* Profile trigger button */}
               <button
                 type="button"
-                onClick={() =>
-                  setProfileMenuOpen((previous) => !previous)
-                }
+                onClick={() => setProfileMenuOpen((previous) => !previous)}
                 aria-expanded={profileMenuOpen}
                 aria-haspopup="menu"
                 className="flex max-w-[175px] items-center gap-2 rounded-lg px-2 py-1.5 transition hover:bg-[#F0F5F0] sm:max-w-[210px]"
@@ -148,10 +149,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                   {user.name || "ব্যবহারকারী"}
                 </span>
 
-                <span
-                  aria-hidden="true"
-                  className="text-[9px] text-[#7B857D]"
-                >
+                <span aria-hidden="true" className="text-[9px] text-[#7B857D]">
                   ⌄
                 </span>
               </button>
@@ -159,6 +157,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
               {/* Profile dropdown */}
               {profileMenuOpen && (
                 <>
+                  {/* Invisible click-away layer */}
                   <button
                     type="button"
                     aria-label="মেনু বন্ধ করুন"
@@ -170,7 +169,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                     role="menu"
                     className="absolute right-0 top-full z-50 mt-2 w-[220px] rounded-xl border border-[#E1EAE2] bg-[#FAFCFA] p-2 shadow-[0_8px_24px_rgba(38,51,42,0.16)]"
                   >
-                    {/* User information */}
+                    {/* Name + email header */}
                     <div className="border-b border-[#E8EEE8] px-2.5 py-2">
                       <p className="truncate text-xs font-bold text-[#26332A]">
                         {user.name || "ব্যবহারকারী"}
@@ -181,7 +180,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                       </p>
                     </div>
 
-                    {/* Profile link */}
+                    {/* Link to profile page */}
                     <Link
                       href="/profile"
                       role="menuitem"
@@ -226,9 +225,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                         <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
                       </svg>
 
-                      {isSigningOut
-                        ? "সাইন আউট হচ্ছে..."
-                        : "সাইন আউট"}
+                      {isSigningOut ? "সাইন আউট হচ্ছে..." : "সাইন আউট"}
                     </button>
                   </div>
                 </>
@@ -236,6 +233,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
             </div>
           ) : !isPending ? (
             <>
+              {/* Not signed in: show sign-in + sign-up links */}
               <Link
                 href="/signin"
                 className="rounded-md px-2 py-2 text-xs font-semibold text-[#26332A] transition hover:text-[#07883F]"
@@ -251,14 +249,16 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
               </Link>
             </>
           ) : (
+            // Session still loading: show a small skeleton
             <div className="h-7 w-20 animate-pulse rounded-lg bg-[#E4F3E8]" />
           )}
         </div>
       </div>
 
-      {/* Category navigation */}
+      {/* Second row: category navigation */}
       <nav className="border-t border-[#E8EEE8]">
         <div className="mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-4 sm:gap-2 sm:px-6">
+          {/* Home link */}
           <Link
             href="/"
             className="flex h-8 shrink-0 items-center gap-1 rounded-md px-2 text-[10px] font-semibold transition hover:bg-[#E4F3E8] hover:text-[#07883F] sm:text-xs"
@@ -267,6 +267,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
             হোম
           </Link>
 
+          {/* One link per category */}
           {categories.map((category) => (
             <Link
               key={category.slug}
@@ -280,10 +281,11 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
         </div>
       </nav>
 
-      {/* Scrolling price ticker */}
+      {/* Third row: scrolling price ticker */}
       <div className="ticker-container border-y border-[#E1EAE2]">
         {tickerProducts.length > 0 ? (
           <div className="ticker-track">
+            {/* Two identical copies so the loop looks endless */}
             {[0, 1].map((copy) => (
               <div className="ticker-group" key={copy}>
                 {tickerProducts.map((product, index) => {
@@ -300,6 +302,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                     <Link
                       key={`${copy}-${product.id}-${index}`}
                       href={`/product/${encodeURIComponent(product.slug)}`}
+                      // Second copy is invisible to screen readers + keyboard
                       tabIndex={copy === 0 ? 0 : -1}
                       aria-hidden={copy === 1}
                       className="flex h-8 shrink-0 items-center gap-1.5 border-r border-[#E1EAE2] px-3 text-[10px] transition hover:bg-[#F0F5F0]"
@@ -308,14 +311,13 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
                         {product.image || product.categoryIcon || "🛒"}
                       </span>
 
-                      <span className="text-[#526056]">
-                        {product.nameBn}
-                      </span>
+                      <span className="text-[#526056]">{product.nameBn}</span>
 
                       <span className="text-[#26332A]">
                         {formatPrice(product.today)} টাকা/{product.unit}
                       </span>
 
+                      {/* Arrow + percent change */}
                       <span className={`font-semibold ${changeColor}`}>
                         {isUp ? "▲" : isDown ? "▼" : "—"}
                         {formatPrice(Math.abs(product.change?.pct ?? 0))}%
@@ -327,6 +329,7 @@ export default function Navbar({ tickerProducts }: NavbarProps) {
             ))}
           </div>
         ) : (
+          // Fallback when there's no ticker data
           <div className="flex h-8 items-center px-4 text-[10px] text-[#7B857D]">
             বাজারদরের তথ্য আপাতত পাওয়া যাচ্ছে না।
           </div>

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect } from "react";
@@ -9,10 +8,8 @@ interface CategoryErrorProps {
   reset: () => void;
 }
 
-export default function CategoryError({
-  error,
-  reset,
-}: CategoryErrorProps) {
+export default function CategoryError({ error, reset }: CategoryErrorProps) {
+  // Log the error so we can debug it later
   useEffect(() => {
     console.error("Category page error:", error);
   }, [error]);
@@ -20,16 +17,22 @@ export default function CategoryError({
   return (
     <main className="flex min-h-[60vh] items-center justify-center px-4 py-12">
       <section className="max-w-lg text-center">
-        <div className="text-5xl" aria-hidden="true">😕</div>
+        {/* Sad face icon */}
+        <div className="text-5xl" aria-hidden="true">
+          😕
+        </div>
 
+        {/* Main message */}
         <h1 className="mt-4 text-2xl font-bold">
           বিভাগটি লোড করা যায়নি
         </h1>
 
+        {/* Short hint for the user */}
         <p className="mt-3 text-gray-600">
           বিভাগটির তথ্য আনতে সমস্যা হয়েছে। আবার চেষ্টা করুন।
         </p>
 
+        {/* Action buttons */}
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <button
             type="button"
